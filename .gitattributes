@@ -1,0 +1,3 @@
+*.mjs text/javascript
+*.js  text/javascript
+*.sf2 application/octet-stream

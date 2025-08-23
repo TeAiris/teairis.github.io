@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>AlphaTab — AlphaTex + Player + Cursor (Integrated)</title>
+  <!-- AlphaTab library (keep your local build path) -->
+  <script src="./AlphaTabLib//dist/alphaTab.js"></script>
+  <script src="./AlphaTabLib//dist/alphaTab-drag.js"></script>
+
+  <style>
+    /* ===== styles.css (inlined) ===== */
+    /* Handwritten jazz fonts */
+    @font-face { font-family: 'MuseJazz'; src: url('fonts/musejazz/MuseJazz.otf') format('opentype'); font-display: swap; }
+    @font-face { font-family: 'MuseJazzText'; src: url('fonts/musejazz/MuseJazzText.otf') format('opentype'); font-display: swap; }
+
+    body { margin: 0; font-family: 'MuseJazzText', system-ui, Arial, sans-serif; }
+    .controls { display:flex; gap:8px; align-items:center; padding:10px; border-top:1px solid #ddd; flex-wrap: wrap; }
+    .controls button { padding:6px 10px; }
+    .controls .at-loop.active { background: rgba(0,128,0,0.15); border:1px solid rgba(0,128,0,0.35); }
+    .spacer { flex:1; }
+
+    /* Cursors / overlays */
+    .at-cursor-bar { background: rgba(86,199,222,0.48); }
+    .at-selection div{
+      background: transparent !important;
+      border-top: 3px solid var(--hl-color, rgba(64,64,255,0.7));
+      border-bottom: 3px solid var(--hl-color, rgba(64,64,255,0.7));
+      border-left: none !important; border-right: none !important; border-radius: 0;
+      box-sizing: border-box; pointer-events: none;
+    }
+    .at-cursor-beat { background: rgba(0,0,0,0.1); width: 3px; }
+    .at-highlight * { fill: var(--hl-color, currentColor); stroke: var(--hl-color, currentColor); }
+
+    /* Light/Dark */
+    :root { --ui-fg:#111; --ui-bg:#fff; --ghost-op: .35; --tile-trim-left: 46px; }
+    body { background: var(--ui-bg); color: var(--ui-fg); }
+    .controls, .controls label, .controls span, .controls button { color: inherit; }
+
+    body.dark { --ui-fg:#fff; --ui-bg:#000; }
+    body.dark .controls button { background: rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.25); }
+    body.dark input[type="range"]::-webkit-slider-thumb,
+    body.dark input[type="range"]::-moz-range-thumb { background:#fff; }
+
+    /* ===== Split layout: left score + vertical scroller on right ===== */
+    #mainSplit { display:flex; width:100vw; height:80vh; position:relative; isolation:isolate; }
+    #leftPane  { flex:1 1 auto; min-width:260px; position:relative; }
+    #sheet     { width:100%; height:100%; position:relative; isolation:isolate; }
+    #leftPane .at-viewport, #leftPane .at-viewport svg, #leftPane svg { position: relative; z-index: 0; }
+    #leftPane .at-overlay { position: relative; z-index: 1; }
+
+    #splitResizer { width:8px; cursor:ew-resize; background:linear-gradient(to right, rgba(0,0,0,.08), rgba(0,0,0,.02)); border-left:1px solid #ddd; border-right:1px solid #eee; }
+    #splitResizer:active { background: rgba(0,0,0,0.15); }
+    #rightPane { width:360px; min-width:220px; max-width:70vw; display:flex; flex-direction:column; }
+
+    /* ===== Vertical Measure Scroller (right pane) ===== */
+    #measureScroller { padding: 8px 10px 6px; border-bottom:1px solid #eee; background: transparent; }
+    #ms-controls { display:flex; gap:14px; align-items:center; flex-wrap:wrap; margin-bottom:6px; }
+    #tileBank { display:flex; flex-direction:column; gap:0; overflow-y:auto; overflow-x:hidden; padding:0 6px 10px 6px; margin:0; align-items:stretch; background:transparent; }
+
+    .tile { position:relative; width:auto; height:180px; background:transparent; user-select:none; touch-action:none; overflow: visible; margin:0 0 0 0; }
+    .tile.cropped { margin-left: calc(var(--tile-trim-left) * -1); }
+    .inner { position:absolute; inset:0; background:transparent; }
+    .sheet { position:absolute; inset:0; overflow:visible; background:transparent; pointer-events:none; }
+    .sheet.cropped { clip-path: inset(0 0 0 var(--tile-trim-left)); -webkit-clip-path: inset(0 0 0 var(--tile-trim-left)); }
+
+    /* Sleek handle with centered badge */
+    .handle{
+      position:absolute; top:0; left:0; right:0; height:26px;
+      z-index:10; display:flex; align-items:center; justify-content:center;
+      cursor:grab; font:600 12px/1 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color:#111;
+      background: rgba(0,0,0,0.08);
+      border-bottom: 1px solid rgba(0,0,0,0.22);
+      backdrop-filter: blur(2px);
+    }
+    .handle:active{ cursor:grabbing; }
+    .handle.shift { transform: translateX(var(--tile-trim-left)); }
+    .badge{ min-width:24px; height:18px; line-height:18px; border-radius:9px; padding:0 8px; background:#111; color:#fff; border:0; box-shadow:0 1px 0 rgba(0,0,0,.25); }
+
+    /* Drag ghost + drag proxy */
+    .ghost { height:180px; background: rgba(0,0,0,var(--ghost-op)); border:1px dashed rgba(0,0,0,0.35); border-radius:2px; }
+    .drag-proxy { position:fixed !important; z-index:1000; pointer-events:none; box-shadow:0 6px 18px rgba(0,0,0,.25); }
+  </style>
+</head>
+<body>
+
+  <!-- Split: main score (left) + resizer + vertical tiles (right) -->
+  <div id="mainSplit">
+    <div id="leftPane">
+      <div id="sheet"></div>
+    </div>
+    <div id="splitResizer" title="Drag to resize (left↔right)"></div>
+    <div id="rightPane">
+      <div id="measureScroller">
+        <div id="ms-controls">
+          <strong>Measures</strong>
+          <label>Start bar:
+            <input id="msStartBar" type="number" min="1" value="2" style="width:64px">
+          </label>
+          <label>Front trim:
+            <input id="msTrim" type="range" min="0" max="400" value="46" step="1" style="width:160px;">
+            <span id="msTrimVal">46</span> px
+          </label>
+          <label>Ghost opacity:
+            <input id="msGhost" type="range" min="0" max="100" value="35" step="1" style="width:140px;">
+            <span id="msGhostVal">35</span>%
+          </label>
+          <button id="msBuild">Rebuild</button>
+        </div>
+        <div id="tileBank" aria-label="Measure tiles (drag-enabled)"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Controls toolbar (unchanged, just moved below the split) -->
+  <div class="controls">
+    <!-- transport -->
+    <button id="play" disabled>Play</button>
+    <button id="stop" disabled>Stop</button>
+    <button id="loop" class="at-loop" aria-pressed="false" title="Toggle Loop (L)">Loop</button>
+    <button id="prevNote" title="Highlight Previous Note">Prev Note</button>
+    <button id="nextNote" title="Highlight Next Note">Next Note</button>
+    <span id="status">Loading soundfont… 0%</span>
+    &nbsp; SoundFont:
+    <select id="sfSelect" title="Choose SoundFont">
+      <option value="local" selected>Local (Mallets_GM.sf2)</option>
+      <option value="cdn">CDN Sonivox</option>
+    </select>
+    &nbsp; Metronome:
+    <label><input id="metroToggle" type="checkbox"> Enable</label>
+    <label>Vol <input id="metroVol" type="range" min="0" max="1" step="0.05" value="0" style="width:90px;"></label>
+    <span class="spacer"></span>
+    <button id="btnSetStart" title="Set playbackRange start = current tick">Set Start = ct</button>
+    <button id="btnSetEnd" title="Set playbackRange end = current tick">Set End = ct</button>
+    &nbsp; Early(ms):
+    <input id="earlyMs" type="range" min="0" max="30" value="5" style="width:120px;">
+    <span id="earlyVal" class="mono">5</span>
+    &nbsp; Delay at loop end:
+    <input id="lateDelay" type="range" min="0" max="50" step="1" value="0" style="width:120px;">
+    <span id="lateDelayVal" class="mono">0</span> ms
+
+    <!-- tempo + layout/opacity -->
+    <label>Tempo:
+      <input id="tempo" type="range" min="40" max="220" value="110" style="width:120px;">
+      <span id="tempoVal">110</span> BPM
+    </label>
+    <label>Note Opacity:
+      <input id="opacity" type="range" min="0" max="1" step="0.05" value="0.05" style="width:90px;">
+      <span id="opacityVal">0.05</span>
+    </label>
+    <label>Chord Spacing (top):
+      <input id="chordSpace" type="range" min="0" max="30" step="1" value="12" style="width:110px;">
+      <span id="chordVal">12px</span>
+    </label>
+    <label>Dynamics Spacing (bottom):
+      <input id="dynSpace" type="range" min="0" max="30" step="1" value="16" style="width:110px;">
+      <span id="dynVal">16px</span>
+    </label>
+
+    <!-- highlight assist + HSV -->
+    <label style="margin-left:12px;">
+      <input id="hlAssist" type="checkbox"> Loop Selection Assist
+    </label>
+    <span class="hsv-controls" style="margin-left:12px;">
+      <label title="Hue (0–360)" style="display:inline;">H:
+        <input id="hlH" type="range" min="0" max="360" value="210" style="width:60px;">
+        <span id="hlHVal">210</span>
+      </label>
+      <label title="Saturation (0–100%)" style="display:inline; margin-left:8px;">S:
+        <input id="hlS" type="range" min="0" max="100" value="70" style="width:60px;">
+        <span id="hlSVal">70</span>%
+      </label>
+      <label title="Value/Brightness (0–100%)" style="display:inline; margin-left:8px;">V:
+        <input id="hlV" type="range" min="0" max="100" value="80" style="width:60px;">
+        <span id="hlVVal">80</span>%
+      </label>
+    </span>
+
+    <!-- theme -->
+    <label style="margin-left:12px;">
+      <input id="darkMode" type="checkbox"> Dark mode
+    </label>
+
+    <!-- NEW: Transpose/Key controls -->
+    <span style="margin-left:12px;">Transpose:
+      <button id="tDown" title="Transpose down">−</button>
+      <button id="tUp" title="Transpose up">+</button>
+      <button id="tReset" title="Reset transpose">Reset</button>
+      <span id="transposeVal">0</span> st
+    </span>
+    <label title="Update visible key signature when transposing">
+      <input id="keySigToggle" type="checkbox" checked> Key Sig
+    </label>
+    <label title="Prefer flats for enharmonic keys (Db/Gb/Cb); when off uses C#/F#/B">
+      <input id="enhToggle" type="checkbox"> Prefer flats
+    </label>
+
+    <!-- debug -->
+    <span id="pos">00:00 / 00:00</span>
+    <span id="dbg" style="font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin-left:12px; opacity:0.85;">
+      PR: – / – | Loop: – / – | ct: – | seeks: 0
+    </span>
+  </div>
+
+  <script>
+  (() => {
+    /* =========================
+       GLOBALS (config + state)
+       ========================= */
+    const CONFIG = {
+      SOUNDFONT_URL: "soundfonts/Mallets_GM.sf2",
+      SOUNDFONT_CDN: "https://cdn.jsdelivr.net/npm/@coderline/alphatab@1.6.0/dist/soundfont/sonivox.sf2",
+      DEFAULT_BPM: 110
+    };
+
+    //Next/Previous Note Highlighting
+    let highlightedNoteIdx = -1; // -1 means nothing selected
+    let highlightNotesList = [];  
+
+    // Runtime state grouped up-front
+    const STATE = {
+      api: null,
+
+      // visuals & theme
+      isDark: false,
+      normalNoteDimFactor: 0.05,
+      builtinHighlightOn: false,
+
+      // timing
+      currentBpm: CONFIG.DEFAULT_BPM,
+
+      // tick cache / accents
+      tickCacheReady: false,
+      tickHint: null,
+      pendingAccentOnWarm: false,
+
+      // transpose / keys
+      transposeSemis: parseInt(localStorage.getItem('notationTranspose') || '0', 10) || 0,
+      keySigOn: (localStorage.getItem('keySigToggle') !== '0'),
+      preferFlats: (localStorage.getItem('enhPreferFlats') === '1'),
+
+      // last accent
+      lastBeatAccented: null,
+
+      // Track currently applied SoundFont URL
+      currentSfUrl: null,
+    };
+    // Expose STATE globally for measure scroller
+    window.AT_STATE = STATE;
+
+    /* =========================
+       DOM references
+       ========================= */
+    const container = document.getElementById('sheet');
+    const btnPlay = document.getElementById('play');
+    const btnStop = document.getElementById('stop');
+    const status = document.getElementById('status');
+    const btnLoop = document.getElementById('loop');
+    const tempoSlider = document.getElementById('tempo');
+    const tempoVal = document.getElementById('tempoVal');
+    const pos = document.getElementById('pos');
+    const opacitySlider = document.getElementById('opacity');
+    const opacityVal = document.getElementById('opacityVal');
+    const chordSpace = document.getElementById('chordSpace');
+    const chordVal = document.getElementById('chordVal');
+    const dynSpace = document.getElementById('dynSpace');
+    const dynVal = document.getElementById('dynVal');
+    const hlH = document.getElementById('hlH'), hlHVal = document.getElementById('hlHVal');
+    const hlS = document.getElementById('hlS'), hlSVal = document.getElementById('hlSVal');
+    const hlV = document.getElementById('hlV'), hlVVal = document.getElementById('hlVVal');
+    const darkMode = document.getElementById('darkMode');
+    const hlAssist = document.getElementById('hlAssist');
+    const dbg = document.getElementById('dbg');
+
+    // NEW
+    const tDown = document.getElementById('tDown');
+    const tUp = document.getElementById('tUp');
+    const tReset = document.getElementById('tReset');
+    const transposeVal = document.getElementById('transposeVal');
+    const keySigToggle = document.getElementById('keySigToggle');
+    const enhToggle = document.getElementById('enhToggle');
+
+    // SoundFont & Metronome controls
+    const sfSelect = document.getElementById('sfSelect');
+    const metroToggle = document.getElementById('metroToggle');
+    const metroVol = document.getElementById('metroVol');
+
+    // Get your buttons
+    const btnPrevNote = document.getElementById('prevNote');
+    const btnNextNote = document.getElementById('nextNote');
+
+    if (btnPrevNote) btnPrevNote.onclick = () => {
+      if (highlightNotesList.length === 0) return;
+      let idx = highlightedNoteIdx <= 0 ? highlightNotesList.length - 1 : highlightedNoteIdx - 1;
+      highlightNoteAt(idx);
+    };
+    if (btnNextNote) btnNextNote.onclick = () => {
+      if (highlightNotesList.length === 0) return;
+      let idx = highlightedNoteIdx < 0 ? 0 : highlightedNoteIdx + 1;
+      if (idx >= highlightNotesList.length) idx = 0;
+      highlightNoteAt(idx);
+    };
+
+    /* =========================
+       AlphaTab init + TEX
+       ========================= */
+    const TEX_TEMPLATE = (bpm) => `
+\\tempo ${bpm} .
+\\track "Marimba"
+\\instrument marimba
+:4 (C4){ch "Cmaj7"} D4 E4 c3{ beam down } | (G4){ch "Dm7"} A4 B4 C5 |
+:4 (C5){ch "G7"} B4 A4 G4 | (F4){ch "Cmaj7"} E4 D4 C4 |
+:8 (C4){ch "Fmaj7"} D4 E4 F4 G4 A4 B4 C5 | (E4){ch "Em7"} F4 G4 A4 B4 C5 D5 E5 |
+:8 (A4){ch "A7"} G4 F4 E4 D4 C4 B3 A3 | :4 (G4){ch "G7"} F4 E4 D4`;
+    // Expose TEX_TEMPLATE globally for measure scroller
+    window.AT_TEX_TEMPLATE = TEX_TEMPLATE;
+
+    const api = STATE.api = new alphaTab.AlphaTabApi(container, {
+      core: { tex: true },
+      display: {
+        resources: {
+          titleFont: "32px 'MuseJazzText', serif",
+          subTitleFont: "20px 'MuseJazzText', serif",
+          wordsFont: "15px 'MuseJazzText', serif",
+          copyrightFont: "11px 'MuseJazzText', serif",
+          directionsFont: "16px 'MuseJazzText', serif",
+          markerFont: "bold 14px 'MuseJazzText', serif",
+          effectFont: "italic 12px 'MuseJazzText', serif",
+          graceFont: "11px 'MuseJazzText', serif",
+          barNumberFont: "12px 'MuseJazzText', serif",
+          timerFont: "12px 'MuseJazzText', serif",
+          fingeringFont: "12px 'MuseJazzText', serif",
+          inlineFingeringFont: "12px 'MuseJazzText', serif",
+          tablatureFont: "13px 'MuseJazzText', serif",
+          numberedNotationFont: "14px 'MuseJazzText', serif",
+          numberedNotationGraceFont: "12px 'MuseJazzText', serif",
+          fretboardNumberFont: "12px 'MuseJazzText', serif"
+        },
+        effectStaffPaddingTop: 16,
+        notationStaffPaddingBottom: 14,
+        effectStaffPaddingBottom: 12,
+        notationStaffPaddingTop: 10
+      },
+      player: {
+        enablePlayer: true,
+        enableCursor: true,
+        enableElementHighlighting: false,
+        soundFont: CONFIG.SOUNDFONT_URL,
+        scrollElement: container,
+        schedulerLookAhead: 20,
+        reverb: { enabled: true, roomSize: 1, damping: 0.2, width: 0.8, level: 0.9 }
+      }
+    });
+
+    try { api.isLooping = false; } catch(_) {}
+    // SoundFont preference + guard against loops
+    const savedSf = localStorage.getItem('sfChoice') || 'local';
+    if (sfSelect) sfSelect.value = savedSf;
+    const applySoundFontChoice = (choice) => {
+      const url = choice === 'cdn' ? CONFIG.SOUNDFONT_CDN : CONFIG.SOUNDFONT_URL;
+      if (STATE.currentSfUrl === url) return; // guard against loops
+      STATE.currentSfUrl = url;
+      try {
+        if (typeof api.loadSoundFontFromUrl === 'function') {
+          api.loadSoundFontFromUrl(url);
+        } else {
+          api.settings.player.soundFont = url;
+          api.updateSettings();
+          api.render();
+        }
+      } catch (e) { console.warn('applySoundFontChoice failed:', e); }
+    };
+    applySoundFontChoice(savedSf);
+    const renderScoreWithBpm = (bpm) => { STATE.currentBpm = bpm; api.tex(TEX_TEMPLATE(STATE.currentBpm)); };
+
+    /* =========================
+       Helpers (colors, ticks, etc.)
+       ========================= */
+    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+    const debounce = (fn, delay) => { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); }; };
+
+    const BW_COLORS = ['#FF0000','#FF6600','#FF9900','#FFCC00','#FFFF00','#00FF00','#00CCFF','#0066FF','#6600FF','#9900CC','#CC0099','#FF3399'];
+    const hexToRgb = (hex) => { const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex); return m ? { r: parseInt(m[1],16), g: parseInt(m[2],16), b: parseInt(m[3],16) } : { r:0,g:0,b:0 }; };
+    const rgbToHex = (r,g,b) => '#' + [r,g,b].map(v => clamp(v,0,255).toString(16).padStart(2,'0')).join('');
+    const hsvToRgb = (h,s,v) => { h=((h%360)+360)%360; s=clamp(s,0,100)/100; v=clamp(v,0,100)/100; const c=v*s, x=c*(1-Math.abs((h/60)%2-1)), m=v-c; let r=0,g=0,b=0;
+      if (h<60){r=c;g=x;b=0;} else if (h<120){r=x;g=c;b=0;} else if (h<180){r=0;g=c;b=x;} else if (h<240){r=0;g=x;b=c;} else if (h<300){r=x;g=0;b=c;} else {r=c;g=0;b=x;}
+      return { r: Math.round((r+m)*255), g: Math.round((g+m)*255), b: Math.round((b+m)*255) }; };
+    const hsvToHex = (h,s,v) => { const {r,g,b}=hsvToRgb(h,s,v); return rgbToHex(r,g,b); };
+    const pcColor = (midi) => { const pc = ((midi % 12) + 12) % 12; return BW_COLORS[pc] || '#000000'; };
+
+    const setHighlightColor = (hex) => document.documentElement.style.setProperty('--hl-color', hex);
+    const getStaticHlHex = () => {
+      const h = parseFloat(hlH.value)||0, s=parseFloat(hlS.value)||0, v=parseFloat(hlV.value)||0;
+      const hsvToRgb = (h,s,v) => { h=((h%360)+360)%360; s=Math.max(0,Math.min(1,s/100)); v=Math.max(0,Math.min(1,v/100)); const c=v*s, x=c*(1-Math.abs((h/60)%2-1)), m=v-c; let r=0,g=0,b=0;
+        if (h<60){r=c;g=x;b=0;} else if (h<120){r=x;g=c;b=0;} else if (h<180){r=0;g=c;b=x;} else if (h<240){r=0;g=x;b=c;} else if (h<300){r=x;g=0;b=c;} else {r=c;g=0;b=x;}
+        return { r: Math.round((r+m)*255), g: Math.round((g+m)*255), b: Math.round((b+m)*255) }; };
+      const rgbToHex = (r,g,b) => '#' + [r,g,b].map(v => Math.max(0,Math.min(255,v)).toString(16).padStart(2,'0')).join('');
+      const {r,g,b}=hsvToRgb(h,s,v); return rgbToHex(r,g,b);
+    };
+
+    const getTickCache = () => api.tickCache ?? api.boundsLookup ?? null;
+    function ticksPerMs(){
+      const tc = getTickCache();
+      const durMs = api?.player?.endTime ?? api?.score?.playTime ?? null;
+      const durTicks = api?.score?.duration ?? null;
+      if (tc && typeof tc.timeToTick === 'function' && durMs != null && durTicks != null) {
+        const tick0 = tc.timeToTick(0), tick1 = tc.timeToTick(1);
+        return Math.max(1, tick1 - tick0);
+      }
+      if (durMs && durTicks) return durTicks / durMs;
+      return 1;
+    }
+    function msToTicks(ms){ return Math.max(1, Math.round(ticksPerMs() * ms)); }
+    function ticksToMs(t){ const k = ticksPerMs(); return Math.round(t / k); }
+
+    const getTrackSet = () => {
+      const t = api?.score?.tracks || [];
+      const idx = new Set(); for (let i = 0; i < t.length; i++) idx.add(i);
+      if (idx.size === 0) idx.add(0); return idx;
+    };
+
+    /* =========================
+       Theme / notational styles
+       ========================= */
+    const applyDarkNotationalStyles = (score, dark) => {
+      try {
+        const A = alphaTab.model;
+        const WHITE = A.Color.fromJson('#FFFFFF');
+
+        if (dark) {
+          score.style = new A.ScoreStyle();
+          const SS = A.ScoreSubElement;
+          [SS.Title,SS.SubTitle,SS.Artist,SS.Album,SS.Words,SS.Music,SS.WordsAndMusic,SS.Transcriber,SS.Copyright,SS.CopyrightSecondLine,SS.ChordDiagramList]
+            .forEach(k => { if (k !== undefined) score.style.colors.set(k, WHITE); });
+          for (const track of score.tracks) {
+            track.style = new A.TrackStyle();
+            const TS = A.TrackSubElement;
+            [TS.TrackName, TS.BracesAndBrackets, TS.SystemSeparator, TS.StringTuning]
+              .forEach(k => { if (k !== undefined) track.style.colors.set(k, WHITE); });
+            for (const staff of track.staves) for (const bar of staff.bars) {
+              if (!bar.style) bar.style = new A.BarStyle();
+              const BSb = A.BarSubElement;
+              [BSb.StandardNotationBarNumber, BSb.StandardNotationBarLines, BSb.StandardNotationClef,
+               BSb.StandardNotationKeySignature, BSb.StandardNotationTimeSignature, BSb.StandardNotationStaffLine]
+               .forEach(k => { if (k !== undefined) bar.style.colors.set(k, WHITE); });
+              for (const voice of bar.voices) for (const beat of voice.beats) {
+                if (!beat.style) beat.style = new A.BeatStyle();
+                const BE = A.BeatSubElement;
+                [BE.Effects, BE.StandardNotationEffects].forEach(k => {
+                  if (k !== undefined) beat.style.colors.set(k, WHITE);
+                });
+              }
+            }
+          }
+        } else {
+          // reset styles
+          try { score.style = null; } catch {}
+          for (const track of score.tracks) {
+            try { track.style = null; } catch {}
+            for (const staff of track.staves) for (const bar of staff.bars) {
+              try { bar.style = null; } catch {}
+              for (const voice of bar.voices) {
+                for (const beat of voice.beats) {
+                  try { beat.style = null; } catch {}
+                  for (const n of beat.notes || []) { try { n.style = null; } catch {} }
+                }
+              }
+            }
+          }
+        }
+      } catch {}
+    };
+
+    const colorSets = (() => {
+      const A = alphaTab.model;
+      const NS = A.NoteSubElement, BS = A.BeatSubElement;
+      const NOTE_KEYS_ALL = [
+        NS.StandardNotationNoteHead, NS.StandardNotationAccidentals, NS.StandardNotationEffects,
+        NS.GuitarTabFretNumber, NS.GuitarTabEffects, NS.SlashNoteHead, NS.SlashEffects,
+        NS.NumberedNumber, NS.NumberedAccidentals, NS.NumberedEffects,
+        NS.StandardNotationLedgerLines, NS.StandardNotationLedgerLine, NS.LedgerLines
+      ].filter(Boolean);
+      const BEAT_KEYS_BASELINE = [
+        BS.StandardNotationStem, BS.StandardNotationFlags, BS.StandardNotationBeams, BS.StandardNotationTuplet,
+        BS.StandardNotationEffects, BS.StandardNotationRests, BS.StandardNotationGraceBeams, BS.StandardNotationGraceFlags,
+        BS.GuitarTabStem, BS.GuitarTabFlags, BS.GuitarTabBeams, BS.GuitarTabTuplet, BS.GuitarTabEffects,
+        BS.StandardNotationLedgerLines
+      ].filter(Boolean);
+      const BEAT_KEYS_ACCENT = BEAT_KEYS_BASELINE.filter(k =>
+        k !== BS.StandardNotationBeams && k !== BS.GuitarTabBeams && k !== BS.StandardNotationGraceBeams && k !==  BS.StandardNotationStem, 
+      );
+      return { NOTE_KEYS_ALL, BEAT_KEYS_BASELINE, BEAT_KEYS_ACCENT };
+    })();
+
+    const dimHex = (hex, factor=STATE.normalNoteDimFactor) => {
+      const toRGB = (h)=>{const m=/^#?([a-f\\d]{2})([a-f\\d]{2})([a-f\\d]{2})$/i.exec(h);return m?{r:parseInt(m[1],16),g:parseInt(m[2],16),b:parseInt(m[3],16)}:{r:0,g:0,b:0}};
+      const {r,g,b} = toRGB(hex);
+      const target = STATE.isDark ? {r:255,g:255,b:255} : {r:0,g:0,b:0};
+      const toHex=(r,g,b)=>'#'+[r,g,b].map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('');
+      return toHex(r*factor + target.r*(1-factor), g*factor + target.g*(1-factor), b*factor + target.b*(1-factor));
+    };
+    const beatSignature = (beat) => (beat?.notes || []).map(n => (typeof n?.realValue === 'number' ? n.realValue : 'x')).join(',');
+    const beatTopColorHex = (beat) => {
+      let top = null;
+      for (const n of beat?.notes || []) {
+        if (typeof n?.realValue === 'number' && (top === null || n.realValue > top.realValue)) top = n;
+      }
+      return top ? pcColor(top.realValue) : '#000000';
+    };
+    const findBeatInScore = (score, targetBeat) => {
+      if (!score || !targetBeat) return null;
+      const sig = beatSignature(targetBeat);
+      if (!sig) return null;
+      for (const track of score.tracks || []) for (const staff of track.staves || [])
+      for (const bar of staff.bars || []) for (const voice of bar.voices || [])
+      for (const beat of voice.beats || []) {
+        if ((beat?.notes?.length || 0) === (targetBeat.notes?.length || 0) && beatSignature(beat) === sig) return beat;
+      }
+      return null;
+    };
+
+    const recolorBeat = (beat) => {
+      if (!STATE.USE_INLINE_COLORING) return;
+      try {
+        const A = alphaTab.model, K = colorSets;
+        const dim = A.Color.fromJson(dimHex(beatTopColorHex(beat), STATE.normalNoteDimFactor));
+        if (!beat.style) beat.style = new A.BeatStyle();
+        for (const k of K.BEAT_KEYS_BASELINE) beat.style.colors.set(k, dim);
+        for (const n of beat.notes || []) {
+          if (typeof n.realValue !== 'number') continue;
+          const nhCol = A.Color.fromJson(dimHex(pcColor(n.realValue), STATE.normalNoteDimFactor));
+          if (!n.style) n.style = new A.NoteStyle();
+          for (const k of K.NOTE_KEYS_ALL) n.style.colors.set(k, nhCol);
+        }
+      } catch {}
+    };
+    const accentBeat = (beat) => {
+      if (!STATE.USE_INLINE_COLORING) return;
+      if (!beat) return;
+      const A = alphaTab.model, K = colorSets;
+      const fullHex = beatTopColorHex(beat);
+      const fullCol = A.Color.fromJson(fullHex);
+      if (!beat.style) beat.style = new A.BeatStyle();
+      for (const k of K.BEAT_KEYS_ACCENT) beat.style.colors.set(k, fullCol);
+      for (const n of (beat.notes || [])) {
+        if (typeof n.realValue !== 'number') continue;
+        const nFullCol = A.Color.fromJson(pcColor(n.realValue));
+        if (!n.style) n.style = new A.NoteStyle();
+        for (const k of K.NOTE_KEYS_ALL) n.style.colors.set(k, nFullCol);
+      }
+    };
+    const colorScoreByPitch = (score) => {
+      if (!STATE.USE_INLINE_COLORING) return;
+      try {
+        const A = alphaTab.model, K = colorSets;
+        for (const track of score?.tracks || []) for (const staff of track.staves || [])
+        for (const bar of staff.bars || []) for (const voice of bar.voices || [])
+        for (const beat of voice.beats || []) {
+          const topHex = beatTopColorHex(beat);
+          const stemHex = dimHex(topHex, STATE.normalNoteDimFactor);
+          const stemCol = A.Color.fromJson(stemHex);
+          if (!beat.style) beat.style = new A.BeatStyle();
+          for (const k of K.BEAT_KEYS_BASELINE) beat.style.colors.set(k, stemCol);
+          for (const n of beat.notes || []) {
+            if (typeof n.realValue !== 'number') continue;
+            const nh = A.Color.fromJson(dimHex(pcColor(n.realValue), STATE.normalNoteDimFactor));
+            if (!n.style) n.style = new A.NoteStyle();
+            for (const k of K.NOTE_KEYS_ALL) n.style.colors.set(k, nh);
+          }
+        }
+      } catch (e) { console.warn('colorScoreByPitch failed:', e); }
+    };
+
+    /* =========================
+       Built-in highlight assist
+       ========================= */
+    function setBuiltinHighlighting(on) {
+      STATE.builtinHighlightOn = !!on;
+      const s = api.settings || {};
+      s.player = s.player || {};
+      s.player.enableElementHighlighting = STATE.builtinHighlightOn;
+      try { api.updateSettings(s); api.render(); } catch (_) {}
+    }
+    STATE.USE_INLINE_COLORING = true;
+
+    // ---- Time/Tick conversion helpers
+    function currentTick() {
+      return (typeof api.tickPosition === 'number') ? api.tickPosition : (typeof api.player?.currentTick === 'number' ? api.player.currentTick : null);
+    }
+    function getPlaybackRangeTicks() {
+      const pr = api.playbackRange || api.player?.playbackRange || null;
+      if (!pr) return { s:null, e:null, src:'none' };
+      if (typeof pr.startTick === 'number' && typeof pr.endTick === 'number') return { s: pr.startTick, e: pr.endTick, src:'playbackRange[ticks]' };
+      if (typeof pr.tickStart === 'number' && typeof pr.tickEnd === 'number') return { s: pr.tickStart, e: pr.tickEnd, src:'playbackRange[tickStart/tickEnd]' };
+      const msStart = (typeof pr.startTime === 'number') ? pr.startTime : (typeof pr.msStart === 'number' ? pr.msStart : null);
+      const msEnd   = (typeof pr.endTime === 'number') ? pr.endTime   : (typeof pr.msEnd === 'number'   ? pr.msEnd   : null);
+      if (msStart != null && msEnd != null) {
+        const durMs = api?.player?.endTime ?? api?.score?.playTime ?? null;
+        const durTicks = api?.score?.duration ?? null;
+        if (durMs && durTicks) { const ratio = durTicks / durMs; return { s: Math.round(msStart * ratio), e: Math.round(msEnd * ratio), src:'playbackRange[estimate]' }; }
+      }
+      return { s:null, e:null, src:'playbackRange[unknown]' };
+    }
+
+    // ---- Loop state
+    let loopEnabled = false;
+    let loopStartTick = null;
+    let loopEndTick = null;
+    let seeks = 0;
+    let lastSeekAt = 0;
+    let EARLY_MS = 5;
+    let LOOP_SEEK_EARLY_TICKS = msToTicks(EARLY_MS);
+    let lateDelayMs = 0;
+
+    // wire sliders
+    const earlyMs = document.getElementById('earlyMs');
+    const earlyVal = document.getElementById('earlyVal');
+    const lateDelay = document.getElementById('lateDelay');
+    const lateDelayVal = document.getElementById('lateDelayVal');
+    if (earlyMs && earlyVal){ earlyMs.addEventListener('input', ()=>{ EARLY_MS = parseInt(earlyMs.value,10)||0; earlyVal.textContent = EARLY_MS; LOOP_SEEK_EARLY_TICKS = msToTicks(EARLY_MS); updateDebug('(early='+EARLY_MS+'ms)'); }); }
+    if (lateDelay && lateDelayVal){ lateDelay.addEventListener('input', ()=>{ lateDelayMs = parseInt(lateDelay.value,10)||0; lateDelayVal.textContent = lateDelayMs; }); }
+
+    function setLoopFromActiveRange() {
+      let s=null, e=null, used='none';
+      const pr = getPlaybackRangeTicks();
+      if (typeof pr.s === 'number' && typeof pr.e === 'number' && pr.e > pr.s) { s = pr.s; e = pr.e; used = pr.src; }
+      else if (typeof api.score?.duration === 'number') { s = 0; e = api.score.duration; used = 'score.duration'; }
+      loopStartTick = s; loopEndTick = e; updateDebug(`(setLoop via ${used})`);
+      return (loopStartTick != null && loopEndTick != null);
+    }
+
+    function updateDebug(extra=''){
+      const dbg = document.getElementById('dbg'); if (!dbg) return;
+      const pr = getPlaybackRangeTicks();
+      const parts = [];
+      parts.push(`PR: ${pr.s ?? '–'} / ${pr.e ?? '–'}`);
+      parts.push(`Loop: ${loopStartTick ?? '–'} / ${loopEndTick ?? '–'}`);
+      parts.push(`ct: ${currentTick() ?? '–'}`);
+      parts.push(`seeks: ${seeks}`);
+      if (extra) parts.push(extra);
+      dbg.textContent = parts.join(' | ');
+    }
+
+    function ensureSeekToLoopStart() {
+      const now = performance.now ? performance.now() : Date.now();
+      if (now - lastSeekAt < 15) return;
+      lastSeekAt = now;
+      try {
+        if (currentTick() >= loopEndTick) return;
+        api.tickPosition = loopStartTick ?? 0;
+        if (api.player && api.player.state !== alphaTab.synth.PlayerState.Playing) { api.play(); }
+        try { api.scrollToCursor(); } catch(_) {}
+        seeks++; updateDebug('(seek)');
+      } catch {}
+    }
+
+    // buttons to set playbackRange endpoints
+    const btnSetStart = document.getElementById('btnSetStart');
+    const btnSetEnd   = document.getElementById('btnSetEnd');
+    if (btnSetStart) btnSetStart.onclick = () => {
+      const ct = currentTick(); if (ct == null) return;
+      const pr = getPlaybackRangeTicks();
+      const s = ct, e = (typeof pr.e === 'number' ? pr.e : (api.score?.duration ?? ct+1));
+      api.playbackRange = { startTick: Math.max(0, Math.min(s, e-1)), endTick: Math.max(s+1, e) };
+      if (loopEnabled) setLoopFromActiveRange();
+      updateDebug('(start=ct)');
+    };
+    if (btnSetEnd) btnSetEnd.onclick = () => {
+      const ct = currentTick(); if (ct == null) return;
+      const pr = getPlaybackRangeTicks();
+      const s = (typeof pr.s === 'number' ? pr.s : 0), e = ct;
+      api.playbackRange = { startTick: Math.max(0, Math.min(s, e-1)), endTick: Math.max(s+1, e) };
+      if (loopEnabled) setLoopFromActiveRange();
+      updateDebug('(end=ct)');
+    };
+
+    if (btnLoop){
+      btnLoop.addEventListener('click', ()=>{
+        loopEnabled = !loopEnabled;
+        btnLoop.classList.toggle('active', loopEnabled);
+        btnLoop.setAttribute('aria-pressed', loopEnabled ? 'true' : 'false');
+        if (loopEnabled) setLoopFromActiveRange(); else { loopStartTick = loopEndTick = null; }
+        try { api.isLooping = false; } catch(_) {}
+        updateDebug(loopEnabled ? '(loop:on)' : '(loop:off)');
+      });
+    }
+
+    // hook AlphaTab events to drive loop
+    api.playerStateChanged.on(e => {
+      const playing = e.state === alphaTab.synth.PlayerState.Playing;
+      document.getElementById('play').textContent = playing ? 'Pause' : 'Play';
+      if (playing && loopEnabled && loopStartTick != null) { ensureSeekToLoopStart(); }
+      updateDebug('(state)');
+    });
+
+    api.playerPositionChanged.on(e => {
+      const pos = document.getElementById('pos');
+      if (pos) pos.textContent = `${String(Math.floor(e.currentTime/60000)).padStart(2,'0')}:${String(Math.floor((e.currentTime/1000)%60)).padStart(2,'0')} / ${String(Math.floor(e.endTime/60000)).padStart(2,'0')}:${String(Math.floor((e.endTime/1000)%60)).padStart(2,'0')}`;
+      if (loopEnabled && loopStartTick != null && loopEndTick != null) {
+        const ct = e.currentTick;
+        if (typeof ct === 'number' && ct >= (loopEndTick - LOOP_SEEK_EARLY_TICKS)) { ensureSeekToLoopStart(); }
+      }
+      updateDebug();
+    });
+
+    api.playbackRangeChanged?.on?.(()=>{ if (loopEnabled) setLoopFromActiveRange(); updateDebug('(PR changed)'); });
+
+    api.playerFinished.on(()=>{
+      if (!loopEnabled || loopStartTick == null) return;
+      setTimeout(()=>{ api.tickPosition = loopStartTick; api.play(); seeks++; updateDebug('(finished->restart)'); }, lateDelayMs);
+    });
+
+    api.scoreLoaded.on(score => {
+      applyDarkNotationalStyles(api.score, STATE.isDark);
+      if (STATE.USE_INLINE_COLORING) colorScoreByPitch(api.score);
+      setHighlightColor(getStaticHlHex());
+      setBuiltinHighlighting(hlAssist.checked);
+      if (!tempoSlider.dataset.touched) { tempoSlider.value = STATE.currentBpm; tempoVal.textContent = STATE.currentBpm; }
+      try {
+        const s = api.settings?.display || {};
+        if (Number.isFinite(s.effectStaffPaddingBottom)) { chordSpace.value = String(s.effectStaffPaddingBottom); chordVal.textContent = s.effectStaffPaddingBottom + 'px'; }
+        if (Number.isFinite(s.effectStaffPaddingTop)) { dynSpace.value = String(s.effectStaffPaddingTop); dynVal.textContent = s.effectStaffPaddingTop + 'px'; }
+      } catch {}
+      STATE.tickCacheReady = false; STATE.tickHint = null;
+      const prewarm = () => { try { api.loadMidiForScore(); } catch(_) {} };
+      if (api.isReadyForPlayback) prewarm(); else { const once = () => { api.playerReady.off(once); prewarm(); }; api.playerReady.on(once); }
+      // apply current transpose to both audio + display (and key if enabled)
+      applyNotationTranspose(STATE.transposeSemis);
+      api.render();
+      updateDebug('scoreLoaded');
+
+      // collect notes for prev/next
+      highlightNotesList = [];
+      for (const track of score.tracks)
+        for (const staff of track.staves)
+          for (const bar of staff.bars)
+            for (const voice of bar.voices)
+              for (const beat of voice.beats)
+                for (const note of beat.notes || []) {
+                  highlightNotesList.push({ note, beat });
+                }
+      highlightedNoteIdx = -1;
+    });
+
+    // Clear the highlighted note
+    function clearHighlightedNote() {
+      if (highlightedNoteIdx >= 0 && highlightNotesList[highlightedNoteIdx]) {
+        const { beat } = highlightNotesList[highlightedNoteIdx];
+        if (beat) recolorBeat(beat);
+      }
+      highlightedNoteIdx = -1;
+      try { api.render(); } catch {}
+    }
+    function highlightNoteAt(idx) {
+      clearHighlightedNote();
+      if (highlightNotesList.length === 0) return;
+      highlightedNoteIdx = ((idx % highlightNotesList.length) + highlightNotesList.length) % highlightNotesList.length;
+      const { note, beat } = highlightNotesList[highlightedNoteIdx];
+      if (!note) return;
+      accentBeat(beat);
+      try { api.render(); } catch {}
+    }
+
+    // MIDI-driven highlight color when assist is ON
+    try {
+      if (api.midiEventsPlayed && 'midiEventsPlayedFilter' in api && alphaTab?.midi?.MidiEventType) {
+        api.midiEventsPlayedFilter = [alphaTab.midi.MidiEventType.NoteOn];
+        api.midiEventsPlayed.on(e => { if (!hlAssist.checked) return;
+          let best = null;
+          for (const ev of e.events || []) {
+            const type = ev.type || ev.eventType || ev.kind;
+            const isNoteOn = type === alphaTab?.midi?.MidiEventType?.NoteOn || ev.isNoteOn;
+            if (!isNoteOn) continue;
+            const n = ev.note ?? ev.noteNumber ?? ev.key ?? ev.data1;
+            if (typeof n !== 'number') continue;
+            if (best == null || n > best) best = n;
+          }
+          if (best != null) setHighlightColor(pcColor(best));
+        });
+      }
+    } catch {}
+
+    // Play/pause
+    btnPlay.onclick = () => { api.playPause(); clearHighlightedNote(); };
+    btnStop.onclick = () => api.stop();
+
+    // Transpose UI
+    const clampSemis = (val) => Math.max(-12, Math.min(12, Math.trunc(val)));
+    const reflectTransposeUI = (val) => { if (transposeVal) transposeVal.textContent = String(val); };
+    const PC_TO_KS_SHARPS = { 0:0, 1:7, 2:2, 3:-3, 4:4, 5:-1, 6:6, 7:1, 8:-4, 9:3, 10:-2, 11:5 };
+    const PC_TO_KS_FLATS  = { 0:0, 1:-5, 2:2, 3:-3, 4:4, 5:-1, 6:-6, 7:1, 8:-4, 9:3, 10:-2, 11:-7 };
+    function computePreferredKSAfterTranspose(semi){
+      const n = ((semi % 12) + 12) % 12;
+      const map = STATE.preferFlats ? PC_TO_KS_FLATS : PC_TO_KS_SHARPS;
+      return map[n] ?? 0;
+    }
+    function setScoreKeySignatureVal(val){
+      try {
+        const score = api.score; if (!score) return;
+        let current = (typeof score.keySignature === 'number') ? score.keySignature : null;
+        if (current == null && Array.isArray(score.masterBars) && score.masterBars.length) {
+          current = score.masterBars[0].keySignature;
+        }
+        if (current === val) return;
+        if (typeof score.keySignature === 'number') score.keySignature = val;
+        if (Array.isArray(score.masterBars)){
+          for (const mb of score.masterBars){ mb.keySignature = val; }
+        }
+        try { api.updateSyncPoints(); } catch(_) {}
+      } catch(e){ console.warn('setScoreKeySignatureVal failed', e); }
+    }
+    function applyNotationTranspose(semi){
+      const clamped = clampSemis(semi);
+      if (clamped !== STATE.transposeSemis){
+        STATE.transposeSemis = clamped;
+        try { localStorage.setItem('notationTranspose', String(STATE.transposeSemis)); } catch {}
+      }
+      reflectTransposeUI(STATE.transposeSemis);
+
+      try {
+        const tracks = Array.isArray(api.tracks) ? api.tracks : [];
+        if (tracks.length > 0 && typeof api.changeTrackTranspositionPitch === 'function') {
+          api.changeTrackTranspositionPitch(tracks, STATE.transposeSemis);
+        }
+      } catch (e) { console.warn('transpose playback failed', e); }
+
+      try {
+        const s = api.settings || (api.settings = {});
+        s.notation = s.notation || {};
+
+        const rendered = (api.tracks && api.tracks.length) ? api.tracks.length : 0;
+        const total    = (api.score && api.score.tracks && api.score.tracks.length) ? api.score.tracks.length : 0;
+        const nTracks  = Math.max(rendered, total, 1);
+        const next     = Array.from({ length: nTracks }, () => STATE.transposeSemis);
+        const prev     = Array.isArray(s.notation.transpositionPitches) ? s.notation.transpositionPitches : [];
+        const sameArr  = prev.length === next.length && prev.every((v,i)=>v===next[i]);
+
+        s.notation.transposeKeySignatures = !!STATE.keySigOn;
+        if (!sameArr) s.notation.transpositionPitches = next;
+
+        api.updateSettings();
+
+        if (s.notation.transposeKeySignatures){
+          const targetKS = computePreferredKSAfterTranspose(STATE.transposeSemis);
+          setScoreKeySignatureVal(targetKS);
+        }
+        try { api.render(); } catch {}
+      } catch (e) { console.warn('transpose notation failed', e); }
+
+      // MIDI rebuild
+      try { api.loadMidiForScore(); } catch(e) { console.warn('loadMidiForScore failed:', e); }
+    }
+    reflectTransposeUI(STATE.transposeSemis);
+    if (tDown)  tDown.addEventListener('click', () => applyNotationTranspose(clampSemis((STATE.transposeSemis||0) - 1)));
+    if (tUp)    tUp.addEventListener('click', () => applyNotationTranspose(clampSemis((STATE.transposeSemis||0) + 1)));
+    if (tReset) tReset.addEventListener('click', () => applyNotationTranspose(0));
+
+    if (keySigToggle){
+      keySigToggle.checked = STATE.keySigOn;
+      keySigToggle.addEventListener('change', () => {
+        STATE.keySigOn = keySigToggle.checked;
+        try { localStorage.setItem('keySigToggle', STATE.keySigOn ? '1' : '0'); } catch {}
+        applyNotationTranspose(STATE.transposeSemis);
+      });
+    }
+    if (enhToggle){
+      enhToggle.checked = STATE.preferFlats;
+      enhToggle.addEventListener('change', () => {
+        STATE.preferFlats = enhToggle.checked;
+        try { localStorage.setItem('enhPreferFlats', STATE.preferFlats ? '1' : '0'); } catch {}
+        applyNotationTranspose(STATE.transposeSemis);
+      });
+    }
+
+    /* =========================
+       AlphaTab events
+       ========================= */
+    api.error.on(err => {
+      console.error('[AlphaTab error]', err);
+      try { status.textContent = 'AlphaTab error: ' + (err?.message || err); } catch {}
+    });
+
+    api.soundFontLoad.on(e => {
+      const pct = Math.floor((e.loaded / e.total) * 100);
+      status.textContent = `Loading soundfont… ${pct}%`;
+      if (e.loaded >= e.total) { status.textContent = 'Soundfont ready'; }
+    });
+
+    api.playerReady.on(() => {
+      status.textContent = 'Ready';
+      btnStop.disabled = false;
+      btnPlay.disabled = false;
+      // loop UI shim (avoid ReferenceError if not defined elsewhere)
+      function loadLoopPref(){ try { return localStorage.getItem('loopEnabled') === '1'; } catch { return false; } }
+      function applyLoopUI(on){ try { const el = document.getElementById('loop'); if (!el) return; el.classList.toggle('active', !!on); el.setAttribute('aria-pressed', on ? 'true' : 'false'); } catch{} }
+      applyLoopUI(loadLoopPref());
+      if (sfSelect && !STATE.currentSfUrl) applySoundFontChoice(sfSelect.value || 'local');
+      try { api.metronomeVolume = parseFloat(localStorage.getItem('metroVol') || '0') || 0; } catch {}
+    });
+
+    // theme
+    (function initTheme(){
+      const saved = localStorage.getItem('alphatabTheme');
+      STATE.isDark = saved ? (saved === 'dark') : false;
+      darkMode.checked = STATE.isDark;
+      document.body.classList.toggle('dark', STATE.isDark);
+    })();
+    darkMode.addEventListener('change', () => {
+      STATE.isDark = !!darkMode.checked;
+      document.body.classList.toggle('dark', STATE.isDark);
+      localStorage.setItem('alphatabTheme', STATE.isDark ? 'dark' : 'light');
+      try {
+        if (api?.score) {
+          applyDarkNotationalStyles(api.score, STATE.isDark);
+          colorScoreByPitch(api.score);
+          api.updateSettings();
+          api.render();
+        }
+      } catch {}
+    });
+
+    // SoundFont selector
+    if (sfSelect) {
+      sfSelect.addEventListener('change', () => {
+        const choice = sfSelect.value;
+        try { localStorage.setItem('sfChoice', choice); } catch {}
+        applySoundFontChoice(choice);
+      });
+    }
+
+    // Metronome
+    const savedMetroVol = parseFloat(localStorage.getItem('metroVol') || '0');
+    if (!isNaN(savedMetroVol)) {
+      metroVol.value = String(savedMetroVol);
+      try { api.metronomeVolume = savedMetroVol; } catch {}
+      metroToggle.checked = savedMetroVol > 0;
+    }
+    metroToggle.addEventListener('change', () => {
+      const on = !!metroToggle.checked;
+      const vol = on ? (parseFloat(metroVol.value) || 0.5) : 0;
+      try { api.metronomeVolume = vol; } catch {}
+      try { localStorage.setItem('metroVol', String(vol)); } catch {}
+      if (on && vol === 0) { metroVol.value = '0.5'; }
+    });
+    metroVol.addEventListener('input', () => {
+      const v = parseFloat(metroVol.value) || 0;
+      try { api.metronomeVolume = v; } catch {}
+      try { localStorage.setItem('metroVol', String(v)); } catch {}
+      metroToggle.checked = v > 0;
+    });
+
+    // tempo
+    const debouncedRender = debounce((bpm) => renderScoreWithBpm(bpm), 150);
+    tempoVal.textContent = tempoSlider.value;
+    tempoSlider.addEventListener('input', () => {
+      const bpm = parseInt(tempoSlider.value,10) || STATE.currentBpm;
+      tempoVal.textContent = bpm;
+      api.playbackSpeed = 1.0;
+      debouncedRender(bpm);
+    });
+    tempoSlider.addEventListener('change', () => tempoSlider.dataset.touched = '1');
+
+    // opacity
+    opacityVal.textContent = parseFloat(opacitySlider.value).toFixed(2);
+    opacitySlider.addEventListener('input', () => {
+      STATE.normalNoteDimFactor = parseFloat(opacitySlider.value) || 0;
+      opacityVal.textContent = STATE.normalNoteDimFactor.toFixed(2);
+      if (STATE.USE_INLINE_COLORING && api.score) { colorScoreByPitch(api.score); api.render(); }
+    });
+
+    // layout paddings
+    const applyLayoutPadding = () => {
+      try {
+        const s = api.settings;
+        if (!s?.display) return;
+        if (chordSpace) {
+          const vTop = parseInt(chordSpace.value,10) || 0;
+          s.display.effectStaffPaddingBottom = vTop;
+          s.display.notationStaffPaddingTop = Math.max(0, Math.round(vTop * 0.8));
+          chordVal.textContent = `${vTop}px`;
+        }
+        if (dynSpace) {
+          const vBot = parseInt(dynSpace.value,10) || 0;
+          s.display.effectStaffPaddingTop = vBot;
+          s.display.notationStaffPaddingBottom = Math.max(0, Math.round(vBot * 0.875));
+          dynVal.textContent = `${vBot}px`;
+        }
+        api.updateSettings(s); api.render();
+      } catch (e) { console.warn('applyLayoutPadding failed:', e); }
+    };
+    chordSpace.addEventListener('input', applyLayoutPadding);
+    dynSpace.addEventListener('input', applyLayoutPadding);
+
+    const refreshStaticHlUI = () => {
+      hlHVal.textContent = hlH.value; hlSVal.textContent = hlS.value; hlVVal.textContent = hlV.value;
+      setHighlightColor(getStaticHlHex());
+    };
+    refreshStaticHlUI();
+    [hlH,hlS,hlV].forEach(sl => sl.addEventListener('input', refreshStaticHlUI));
+
+    hlAssist.addEventListener('change', () => {
+      setBuiltinHighlighting(hlAssist.checked);
+      setHighlightColor(getStaticHlHex());
+    });
+
+    // Horizontal split resizer (left↔right)
+    (function(){
+      const split = document.getElementById('mainSplit');
+      const left  = document.getElementById('leftPane');
+      const bar   = document.getElementById('splitResizer');
+      const right = document.getElementById('rightPane');
+      if (!split || !left || !bar || !right) return;
+      let dragging=false, startX=0, startW=0;
+      const minLeft = 260, minRight = 220;
+      function begin(e){ dragging=true; const p=e.touches?e.touches[0]:e; startX=p.clientX; startW=left.getBoundingClientRect().width; e.preventDefault(); }
+      function move(e){ if(!dragging) return; const p=e.touches?e.touches[0]:e; const dx=p.clientX - startX; let w = Math.max(minLeft, Math.min(window.innerWidth - minRight - bar.offsetWidth, startW + dx)); left.style.flex = '0 0 ' + w + 'px'; }
+      function end(){ dragging=false; }
+      bar.addEventListener('mousedown', begin);
+      document.addEventListener('mousemove', move);
+      document.addEventListener('mouseup', end);
+      bar.addEventListener('touchstart', begin, {passive:false});
+      document.addEventListener('touchmove', move, {passive:false});
+      document.addEventListener('touchend', end);
+    })();
+
+    // First render after fonts are ready
+    Promise.all([
+      document.fonts.load("16px 'MuseJazzText'"),
+      document.fonts.load("16px 'MuseJazz'")
+    ]).catch(() => {}).finally(() => {
+      renderScoreWithBpm(STATE.currentBpm);
+      setHighlightColor(getStaticHlHex());
+    });
+  })();
+
+  /* =========================
+     Vertical Measure Scroller (right) — uses alphaTab-drag build
+     ========================= */
+  (function setupMeasureScroller(){
+    const bank = document.getElementById('tileBank');
+    if (!bank) return;
+
+    const startBarInput = document.getElementById('msStartBar');
+    const trim = document.getElementById('msTrim');
+    const trimVal = document.getElementById('msTrimVal');
+    const buildBtn = document.getElementById('msBuild');
+    const ghost = document.getElementById('msGhost');
+    const ghostVal = document.getElementById('msGhostVal');
+
+    // Prefer the alternate build for tiles; fall back to the main build if not namespaced
+    const AlphaTabForTiles = (window.alphaTabDrag && window.alphaTabDrag.AlphaTabApi)
+      ? window.alphaTabDrag.AlphaTabApi
+      : (window.alphaTab && window.alphaTab.AlphaTabApi ? window.alphaTab.AlphaTabApi : null);
+
+    if (!AlphaTabForTiles) {
+      console.warn('[Tiles] AlphaTab for tiles not found. Check ./AlphaTabLib//dist/alphaTab-drag.js');
+    }
+
+    function applyTrim(px){
+      document.documentElement.style.setProperty('--tile-trim-left', px + 'px');
+    }
+    function currentTrim(){ return Math.max(0, Number(trim.value) || 0); }
+    function applyGhost(pct){ const v = Math.max(0, Math.min(100, parseInt(pct,10)||0)); document.documentElement.style.setProperty('--ghost-op', (v/100).toString()); }
+
+    // live trim + ghost updates
+    const liveTrimUpdate = () => {
+      const v = currentTrim(); trimVal.textContent = v; applyTrim(v);
+      for (const t of bank.children) {
+        const fullW = parseFloat(t.dataset.fullWidth) || t.getBoundingClientRect().width;
+        const handle = t.querySelector('.handle');
+        if (!handle) continue;
+        if (t.classList.contains('cropped')) {
+          const vis = Math.max(1, fullW - v);
+          handle.classList.add('shift');
+          handle.style.width = vis + 'px';
+          t.dataset.visibleLeft = String(v);
+          t.dataset.visibleWidth = String(vis);
+        } else {
+          handle.classList.remove('shift');
+          handle.style.width = fullW + 'px';
+          t.dataset.visibleLeft = '0';
+          t.dataset.visibleWidth = String(fullW);
+        }
+      }
+    };
+    if (trim){ trim.addEventListener('input', liveTrimUpdate); trimVal.textContent = trim.value; applyTrim(currentTrim()); }
+    if (ghost){ ghost.addEventListener('input', ()=>{ ghostVal.textContent = ghost.value; applyGhost(ghost.value); }); ghostVal.textContent = ghost.value; applyGhost(ghost.value); }
+
+    // vertical DnD with ghost placeholder
+    function insertionIndexY(clientY){
+      const tiles = Array.from(bank.children).filter(el=>!el.classList.contains('ghost'));
+      for (let i=0;i<tiles.length;i++){
+        const t = tiles[i]; const r = t.getBoundingClientRect();
+        const mid = r.top + r.height/2;
+        if (clientY < mid) return i;
+      }
+      return tiles.length;
+    }
+    function addDnD(tile, handle){
+      let dragging = false; let ghostEl = null; let offsetY = 0; let startRect = null;
+      function start(e){
+        const p = e.touches? e.touches[0] : e; startRect = tile.getBoundingClientRect();
+        offsetY = p.clientY - startRect.top; dragging = true; e.preventDefault();
+        ghostEl = document.createElement('div'); ghostEl.className = 'ghost'; ghostEl.style.height = startRect.height + 'px';
+        tile.parentNode.insertBefore(ghostEl, tile.nextSibling);
+        tile.classList.add('drag-proxy');
+        tile.style.width = startRect.width + 'px';
+        tile.style.height = startRect.height + 'px';
+        tile.style.left = startRect.left + 'px';
+        tile.style.top  = startRect.top + 'px';
+      }
+      function move(e){ if(!dragging) return; const p=e.touches?e.touches[0]:e; const y = p.clientY - offsetY;
+        tile.style.top = y + 'px';
+        const idx = insertionIndexY(p.clientY);
+        const tiles = Array.from(bank.children).filter(el=>el!==tile && !el.classList.contains('ghost'));
+        if (idx >= 0 && idx <= tiles.length){
+          if (idx === tiles.length) bank.appendChild(ghostEl); else bank.insertBefore(ghostEl, tiles[idx]);
+        }
+      }
+      function end(){ if(!dragging) return; dragging=false; tile.classList.remove('drag-proxy');
+        if (ghostEl){ bank.insertBefore(tile, ghostEl); ghostEl.remove(); ghostEl=null; }
+        tile.style.left = tile.style.top = tile.style.height = tile.style.width = '';
+      }
+      handle.addEventListener('mousedown', start);
+      document.addEventListener('mousemove', move);
+      document.addEventListener('mouseup', end);
+      handle.addEventListener('touchstart', start, {passive:false});
+      document.addEventListener('touchmove', move, {passive:false});
+      document.addEventListener('touchend', end);
+    }
+
+    function makeTile(barNum, isFirstKept){
+      const tile = document.createElement('div');
+      tile.className = 'tile' + (isFirstKept ? '' : ' cropped');
+
+      const inner = document.createElement('div'); inner.className = 'inner';
+      const sheet = document.createElement('div'); sheet.className = 'sheet' + (isFirstKept ? '' : ' cropped');
+
+      const handle = document.createElement('div'); handle.className = 'handle';
+      const badge = document.createElement('div'); badge.className = 'badge'; badge.textContent = String(barNum);
+      handle.appendChild(badge);
+
+      inner.appendChild(sheet);
+      inner.appendChild(handle);
+      tile.appendChild(inner);
+      bank.appendChild(tile);
+
+      // temporary width to avoid width=0 skip
+      const initialW = 320;
+      tile.style.width = initialW + 'px';
+      sheet.style.width = initialW + 'px';
+      sheet.style.minWidth = '120px';
+
+      const apiTiles = AlphaTabForTiles ? new AlphaTabForTiles(sheet, {
+        core: { tex: true, engine: 'svg' },
+        display: {
+          layoutMode: alphaTab.LayoutMode.Horizontal,
+          startBar: barNum,
+          barCount: 1,
+          scale: 1.0
+        },
+        player: { enablePlayer:false }
+      }) : null;
+
+      if (!apiTiles) { return; }
+
+      apiTiles.renderFinished.on(() => {
+        const svg = sheet.querySelector('svg');
+        if (!svg) { return; }
+        svg.style.background = 'transparent';
+        svg.querySelectorAll('rect[fill="#fff"],rect[fill="#ffffff"],rect[style*="#fff"],rect[style*="white"]').forEach(r=>{
+          r.setAttribute('fill','none'); r.style.fill='none';
+        });
+
+        // Robust measurement: rect, attr width, scrollWidth, viewBox (with epsilon)
+        const rectW = Math.max(1, Math.ceil(svg.getBoundingClientRect().width));
+        const attrW = parseFloat(svg.getAttribute('width')) || 0;
+        const boxW  = (typeof svg.scrollWidth === 'number' ? svg.scrollWidth : 0);
+        let vbW = 0; const vb = svg.getAttribute('viewBox');
+        if (vb) { const parts = vb.trim().split(/\s+/); if (parts.length === 4) { const w = parseFloat(parts[2]); if (!isNaN(w) && w > 0) vbW = w; } }
+        const fullW = Math.max(rectW, attrW, boxW, vbW) + 6;
+
+        tile.style.width = fullW + 'px';
+        tile.style.minWidth = fullW + 'px';
+        sheet.style.width = fullW + 'px';
+        sheet.style.minWidth = fullW + 'px';
+        svg.style.width = fullW + 'px';
+        svg.removeAttribute('preserveAspectRatio');
+        tile.dataset.fullWidth = String(fullW);
+
+        const trimPx = currentTrim();
+        if (tile.classList.contains('cropped')){
+          const vis = Math.max(1, fullW - trimPx);
+          handle.classList.add('shift');
+          handle.style.width = vis + 'px';
+          tile.dataset.visibleLeft = String(trimPx);
+          tile.dataset.visibleWidth = String(vis);
+        } else {
+          handle.classList.remove('shift');
+          handle.style.width = fullW + 'px';
+          tile.dataset.visibleLeft = '0';
+          tile.dataset.visibleWidth = String(fullW);
+        }
+      });
+
+      const TEX = (typeof window.AT_TEX_TEMPLATE === 'function')
+        ? window.AT_TEX_TEMPLATE(window.AT_STATE?.currentBpm || 100)
+        : `
+\\tempo ${window.AT_STATE?.currentBpm||100} .
+\\track "Marimba" \\instrument marimba
+:1 C4 | :1 D4 | :1 E4 | :1 F4 |
+`;
+      requestAnimationFrame(() => apiTiles.tex(TEX));
+      addDnD(tile, handle);
+    }
+
+    function buildTiles(){
+      bank.innerHTML = '';
+      const startAt = Math.max(1, parseInt(startBarInput.value,10) || 1);
+
+      const probeHost = document.createElement('div');
+      probeHost.style.cssText = 'position:absolute;left:-99999px;top:0;width:10px;height:10px;';
+      document.body.appendChild(probeHost);
+
+      const ProbeApi = AlphaTabForTiles || (window.alphaTab && window.alphaTab.AlphaTabApi);
+      const probe = ProbeApi ? new ProbeApi(probeHost, { core: { tex:true, engine:'svg' } }) : null;
+      const TEX = (typeof window.AT_TEX_TEMPLATE === 'function')
+        ? window.AT_TEX_TEMPLATE(window.AT_STATE?.currentBpm || 100)
+        : `
+\\tempo ${window.AT_STATE?.currentBpm||100} .
+\\track "Marimba" \\instrument marimba
+:1 C4 | :1 D4 | :1 E4 | :1 F4 |
+`;
+      if (!probe) { console.warn('[Tiles] No AlphaTab probe'); return; }
+      probe.scoreLoaded.on(() => {
+        const total = probe.score.masterBars.length;
+        try { probeHost.remove(); } catch {}
+        for (let b = startAt; b <= total; b++){
+          makeTile(b, b === startAt);
+        }
+      });
+      probe.tex(TEX);
+    }
+
+    if (buildBtn) buildBtn.addEventListener('click', buildTiles);
+    // initial build
+    buildTiles();
+  })();
+  </script>
+</body>
+</html>

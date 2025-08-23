@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>AlphaTab — measure-sized tiles + number handles</title>
+<script src="./AlphaTabLib//dist/alphaTab.js"></script>
+<style>
+  :root{
+    --tile-w: 156px;   /* initial hint only; tiles will resize to rendered width */
+    --mask-left: 83px; /* constant front trim (hide clef) */
+    --tile-h: 180px;
+    --handle-h: 26px;
+  }
+  /* first-tile-only title trim (left) */
+  :root{
+    --title-trim: 0px; /* left trim for first tile (titles/part names) */
+  }
+  /* debug footer inside each tile */
+  .dbg {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 18px;
+    line-height: 18px;
+    font-size: 11px;
+    text-align: center;
+    color: #111;
+    background: rgba(0,0,0,0.06);
+    border-top: 1px dashed rgba(0,0,0,0.18);
+    pointer-events: none;
+  }
+
+  body { margin:0; font-family:system-ui, Arial; background:transparent; }
+  #controls { padding:10px; border-bottom:1px solid #eee; display:flex; flex-wrap:wrap; gap:16px; align-items:center; }
+  #bank { display:flex; gap:0; overflow-x:auto; padding:8px 0; background:transparent; }
+  #bank::-webkit-scrollbar { height:8px; }
+  #bank::-webkit-scrollbar-thumb { background:#ccc; }
+
+  /* OUTER TILE: width set per-tile (after render) to the measure's true width */
+  .tile {
+    position:relative;
+    flex:0 0 auto;            /* we’ll set style.width via JS */
+    width:var(--tile-w);      /* temporary placeholder until measured */
+    height:var(--tile-h);
+    background:transparent;
+    margin:0;
+    user-select:none;
+    touch-action:none;
+  }
+  /* visually pull later tiles left so bars meet at the trim */
+  .tile.cropped { margin-left: calc(var(--mask-left) * -1); }
+
+  .inner { position:absolute; inset:0; background:transparent; }
+
+  /* AlphaTab render target (transparent). */
+  .sheet {
+    position:absolute; top:0; left:0; right:0; bottom:0;
+    overflow:hidden; background:transparent;
+    pointer-events:none; /* input goes to the handle */
+  }
+  /* Visual crop for non-first tiles only */
+  .sheet.cropped {
+    clip-path: inset(0 0 0 var(--mask-left));
+    -webkit-clip-path: inset(0 0 0 var(--mask-left));
+  }
+  /* Title trim for the first kept tile (trims left area that may contain titles/labels) */
+  .sheet.first-title-trim {
+    clip-path: inset(0 0 0 var(--title-trim));
+    -webkit-clip-path: inset(0 0 0 var(--title-trim));
+  }
+
+  /* VISIBLE TOP HANDLE with centered measure number */
+  .handle {
+    position:absolute; top:0; height:var(--handle-h);
+    z-index:10; pointer-events:auto; cursor: grab;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:600; font-size:12px; color:#111;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.06), rgba(0,0,0,0.02));
+    border-bottom:1px dashed rgba(0,0,0,0.18);
+    /* left/width are set in JS per tile after measurement */
+  }
+  .handle:active { cursor: grabbing; }
+
+  .handle .badge {
+    min-width: 22px; height:18px; line-height:18px;
+    border-radius: 9px; padding: 0 8px;
+    background: rgba(0,0,0,0.10);
+    border: 1px solid rgba(0,0,0,0.18);
+  }
+
+  .dragging { opacity:.65; }
+</style>
+</head>
+<body>
+
+<div id="controls">
+  <label>Front trim (px):
+    <input id="maskL" type="range" min="0" max="400" value="83" step="1">
+    <span id="maskLVal">83</span>
+  </label>
+  <label>Title trim (px):
+    <input id="titleTrim" type="range" min="0" max="200" value="0" step="1">
+    <span id="titleTrimVal">0</span>
+  </label>
+  <label>Start from bar:
+    <input id="startBar" type="number" min="1" value="2" style="width:64px">
+  </label>
+  <button id="rebuild">Rebuild</button>
+</div>
+
+<div id="bank"></div>
+
+<script>
+(() => {
+  // Plenty of measures to test variability
+  const TEX = `\\tempo 100 .
+\\track "Marimba" \\instrument marimba
+:1 C4 | :1 D4 | :1 E4 | :1 F4 | :1 G4 | :1 A4 | :1 B4 | :1 c5 |
+:1 d5 | :1 e5 | :1 f5 | :1 g5 | :1 a5 | :1 b5 | :1 c6 | :1 c5 d5 e5 |
+:1 f5 g5 a5 | :1 b5 a5 g5 | :1 f5 e5 d5 | :1 c5 B4 A4 | :1 G4 F4 E4 | :1 D4 C4 |
+`;
+
+  const bank   = document.getElementById('bank');
+  const maskL  = document.getElementById('maskL');
+  const maskLVal = document.getElementById('maskLVal');
+  const titleTrim  = document.getElementById('titleTrim');
+  const titleTrimVal = document.getElementById('titleTrimVal');
+  const startBarInput = document.getElementById('startBar');
+  const rebuildBtn = document.getElementById('rebuild');
+
+  function applyMask(){
+    const v = Math.max(0, Number(maskL.value)||0);
+    maskLVal.textContent = v;
+    document.documentElement.style.setProperty('--mask-left', v + 'px');
+    // update handle positions/widths live
+    updateHandlesAfterMaskChange(v);
+  }
+  maskL.addEventListener('input', applyMask);
+  rebuildBtn.addEventListener('click', () => buildTiles(parseInt(startBarInput.value,10) || 2));
+  startBarInput.addEventListener('change', () => buildTiles(parseInt(startBarInput.value,10) || 2));
+
+  function applyTitleTrim(){
+    const v = Math.max(0, Number(titleTrim.value)||0);
+    titleTrimVal.textContent = v;
+    document.documentElement.style.setProperty('--title-trim', v + 'px');
+    // Update first tile sheet class and handle widths if needed
+    updateFirstTileTitleTrim(v);
+  }
+  titleTrim.addEventListener('input', applyTitleTrim);
+
+  // Build a tile and then resize it to the measured SVG width
+  function makeTile(barNum, isFirstKept){
+    const tile  = document.createElement('div');
+    tile.className = 'tile' + (isFirstKept ? '' : ' cropped');
+
+    const inner = document.createElement('div'); inner.className = 'inner';
+    const sheet = document.createElement('div');
+    sheet.className = 'sheet' + (isFirstKept ? '' : ' cropped');
+    // Will add 'first-title-trim' later if titleTrim > 0
+
+    const handle = document.createElement('div'); handle.className = 'handle';
+    const badge = document.createElement('div'); badge.className = 'badge'; badge.textContent = String(barNum);
+    handle.appendChild(badge);
+
+    const dbg = document.createElement('div');
+    dbg.className = 'dbg';
+    dbg.textContent = '… measuring …';
+
+    inner.appendChild(sheet);
+    inner.appendChild(handle);
+    inner.appendChild(dbg);
+    tile.appendChild(inner);
+    bank.appendChild(tile);
+
+    const api = new alphaTab.AlphaTabApi(sheet, {
+      core: { tex: true, engine: 'svg' },
+      display: {
+        layoutMode: alphaTab.LayoutMode.Horizontal,
+        startBar: barNum,
+        barCount: 1,
+        scale: 1.0
+      },
+      player: { enablePlayer:false }
+    });
+
+    // After render, measure SVG width and apply it to the tile & handle
+    api.renderFinished.on(() => {
+      const svg = sheet.querySelector('svg');
+      if (!svg) return;
+
+      // make SVG fully transparent (no "paper" background)
+      svg.style.background = 'transparent';
+      svg.querySelectorAll('rect[fill="#fff"],rect[fill="#ffffff"],rect[style*="#fff"],rect[style*="white"]').forEach(r=>{
+        r.setAttribute('fill','none'); r.style.fill = 'none';
+      });
+
+      // Use the **rendered** width in CSS pixels
+      const w = Math.max(1, Math.round(svg.getBoundingClientRect().width));
+      tile.style.width = w + 'px';
+      tile.style.flexBasis = w + 'px';
+      tile.dataset.fullWidth = String(w);
+
+      // DEBUG: show measured full and visible widths
+      // Compute current trims
+      const globalTrim = Number(getComputedStyle(document.documentElement).getPropertyValue('--mask-left'))||0;
+      const titleTrimPx = Number(getComputedStyle(document.documentElement).getPropertyValue('--title-trim'))||0;
+
+      let visLeft = 0, visW = w;
+      if (tile.classList.contains('cropped')) {
+        visLeft = globalTrim;
+        visW = Math.max(1, w - globalTrim);
+      } else {
+        // first tile may be title-trimmed
+        if (titleTrimPx > 0) {
+          sheet.classList.add('first-title-trim');
+          visLeft = titleTrimPx;
+          visW = Math.max(1, w - titleTrimPx);
+        }
+      }
+
+      handle.style.left = visLeft + 'px';
+      handle.style.width = visW + 'px';
+
+      tile.dataset.visibleLeft = String(visLeft);
+      tile.dataset.visibleWidth = String(visW);
+
+      dbg.textContent = `${w}px (vis ${visW}px)`;
+
+    });
+
+    api.tex(TEX);
+    addDragAndDrop(tile, handle);
+  }
+
+  function buildTiles(startAt){
+    bank.innerHTML = '';
+    // probe attached to DOM (non-zero size) to get total bars
+    const probeEl = document.createElement('div');
+    probeEl.style.cssText = 'position:absolute;left:-99999px;top:0;width:10px;height:10px;';
+    document.body.appendChild(probeEl);
+    const probe = new alphaTab.AlphaTabApi(probeEl, { core: { tex:true, engine:'svg' } });
+    probe.scoreLoaded.on(() => {
+      const total = probe.score.masterBars.length;
+      const start = Math.max(1, Math.min(startAt|0, total));
+      try { probeEl.remove(); } catch {}
+      for (let b = start; b <= total; b++){
+        makeTile(b, b === start);
+      }
+    });
+    probe.tex(TEX);
+  }
+
+  // Update handle geometry when trim changes (no rerender needed)
+  function updateHandlesAfterMaskChange(trim){
+    const tiles = Array.from(bank.children);
+    tiles.forEach(t => {
+      const handle = t.querySelector('.handle');
+      if (!handle) return;
+      const fullW = Number(t.dataset.fullWidth)||t.getBoundingClientRect().width;
+      const isCropped = t.classList.contains('cropped');
+      if (isCropped) {
+        const visW = Math.max(1, fullW - trim);
+        handle.style.left = trim + 'px';
+        handle.style.width = visW + 'px';
+        t.dataset.visibleLeft = String(trim);
+        t.dataset.visibleWidth = String(visW);
+        const dbg = t.querySelector('.dbg');
+        if (dbg) dbg.textContent = `${fullW}px (vis ${visW}px)`;
+      } else {
+        handle.style.left = '0px';
+        handle.style.width = fullW + 'px';
+        t.dataset.visibleLeft = '0';
+        t.dataset.visibleWidth = String(fullW);
+        const dbg = t.querySelector('.dbg');
+        if (dbg) dbg.textContent = `${fullW}px (vis ${fullW}px)`;
+      }
+    });
+  }
+
+  function updateFirstTileTitleTrim(trim){
+    const firstTile = bank.firstElementChild;
+    if (!firstTile) return;
+    const sheet = firstTile.querySelector('.sheet');
+    const handle = firstTile.querySelector('.handle');
+    const dbg = firstTile.querySelector('.dbg');
+    if (!sheet || !handle) return;
+
+    // toggle class for first tile sheet
+    if (trim > 0) sheet.classList.add('first-title-trim');
+    else sheet.classList.remove('first-title-trim');
+
+    // recompute visible width/left for first tile
+    const fullW = Number(firstTile.dataset.fullWidth) || firstTile.getBoundingClientRect().width;
+    const visLeft = trim;
+    const visW = Math.max(1, fullW - trim);
+    handle.style.left = visLeft + 'px';
+    handle.style.width = visW + 'px';
+
+    firstTile.dataset.visibleLeft = String(visLeft);
+    firstTile.dataset.visibleWidth = String(visW);
+
+    // update debug text to reflect new visible width
+    if (dbg) dbg.textContent = `${fullW}px (vis ${visW}px)`;
+  }
+
+  // DnD using the handle; insertion index uses per-tile visible geometry
+  function addDragAndDrop(tile, handle){
+    let dragging = false;
+
+    function start(e){
+      dragging = true;
+      tile.classList.add('dragging');
+      e.preventDefault();
+    }
+    function move(e){
+      if(!dragging) return;
+      const p = e.touches ? e.touches[0] : e;
+      const idx = getInsertionIndex(p.clientX);
+      const tiles = Array.from(bank.children);
+      const from = tiles.indexOf(tile);
+      if (idx !== from && idx >= 0 && idx <= tiles.length) {
+        if (idx === tiles.length) bank.appendChild(tile);
+        else bank.insertBefore(tile, tiles[idx]);
+      }
+    }
+    function end(){
+      if(!dragging) return;
+      dragging = false;
+      tile.classList.remove('dragging');
+    }
+
+    handle.addEventListener('mousedown', start);
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', end);
+
+    handle.addEventListener('touchstart', start, { passive:false });
+    document.addEventListener('touchmove', move, { passive:false });
+    document.addEventListener('touchend', end);
+  }
+
+  function getInsertionIndex(pointerX){
+    const tiles = Array.from(bank.children);
+    for (let i = 0; i < tiles.length; i++){
+      const t = tiles[i];
+      const rect = t.getBoundingClientRect();
+      const visLeftOffset = Number(t.dataset.visibleLeft)||0;
+      const visWidth = Math.max(1, Number(t.dataset.visibleWidth)||rect.width);
+      const visibleLeft = rect.left + visLeftOffset;
+      const mid = visibleLeft + visWidth / 2;
+      if (pointerX < mid) return i;
+    }
+    return tiles.length;
+  }
+
+  // init
+  applyMask();
+  applyTitleTrim();
+  buildTiles(parseInt(startBarInput.value,10) || 2);
+})();
+</script>
+</body>
+</html>

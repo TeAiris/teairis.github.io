@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>AlphaTab Loop Debug – PlaybackRange + seek()</title>
+<script src="https://cdn.jsdelivr.net/npm/@coderline/alphatab@1.6.0/dist/alphaTab.js"></script>
+<style>
+  body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+  #sheet { height: 70vh; border-bottom: 1px solid #ddd; }
+  .bar { display:flex; gap:8px; align-items:center; padding:10px; flex-wrap:wrap; }
+  .spacer { flex:1; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  #dbg { opacity:.85; }
+  button, input[type="range"] { cursor: pointer; }
+  .on { background: rgba(0,128,0,.15); border: 1px solid rgba(0,128,0,.35); }
+
+  :root { --hl-color: #3aa7ff; }
+  .at-selection div{
+    background: transparent !important;
+    border-top: 3px solid var(--hl-color);
+    border-bottom: 3px solid var(--hl-color);
+    border-left: none !important; border-right: none !important;
+    border-radius: 0; box-sizing: border-box; pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<div id="sheet"></div>
+
+<div class="bar">
+  <button id="btnPlay">Play/Pause</button>
+  <button id="btnStop">Stop</button>
+  <button id="btnLoop">Loop</button>
+  <span class="spacer"></span>
+  <button id="btnSetStart">Set Start = ct</button>
+  <button id="btnSetEnd">Set End = ct</button>
+  &nbsp; Early(ms): <input id="earlyMs" type="range" min="0" max="30" value="8" style="width:120px;"> <span id="earlyVal">8</span>
+  &nbsp; Delay at loop end:
+  <input id="lateDelay" type="range" min="0" max="50" step="1" value="0" style="width:120px;">
+  <span id="lateDelayVal">0</span> ms
+  &nbsp; Transpose:
+  <button id="tDown" title="Transpose down">−</button>
+  <button id="tUp" title="Transpose up">+</button>
+  <button id="tReset" title="Reset transpose">Reset</button>
+  <span id="transposeVal">0</span> st
+  &nbsp; <label title="Also transpose the key signature"><input id="keySigToggle" type="checkbox" checked> Key Sig</label>
+  &nbsp; <label title="Prefer flats for enharmonic keys (Db/Gb/Cb)"><input id="enhToggle" type="checkbox"> Prefer flats</label>
+  <span id="dbg"><code>PR: – / – | Loop: – / – | ct: – | seeks: 0</code></span>
+</div>
+
+<script>
+(() => {
+  // ---- DOM
+  const container = document.getElementById('sheet');
+  const btnPlay = document.getElementById('btnPlay');
+  const btnStop = document.getElementById('btnStop');
+  const btnLoop = document.getElementById('btnLoop');
+  const btnSetStart = document.getElementById('btnSetStart');
+  const btnSetEnd   = document.getElementById('btnSetEnd');
+  const dbg = document.getElementById('dbg');
+  const earlyMs = document.getElementById('earlyMs');
+  const earlyVal = document.getElementById('earlyVal');
+  const lateDelay = document.getElementById('lateDelay');
+  const lateDelayVal = document.getElementById('lateDelayVal');
+  let lateDelayMs = parseInt(lateDelay?.value || '0', 10) || 0;
+  if (lateDelay && lateDelayVal) {
+    lateDelay.addEventListener('input', () => {
+      lateDelayMs = parseInt(lateDelay.value, 10) || 0;
+      lateDelayVal.textContent = lateDelayMs;
+    });
+  }
+
+  // Transpose UI refs (buttons only)
+  const transposeVal = document.getElementById('transposeVal');
+  const tDown = document.getElementById('tDown');
+  const tUp = document.getElementById('tUp');
+  const tReset = document.getElementById('tReset');
+  const keySigToggle = document.getElementById('keySigToggle');
+  const enhToggle = document.getElementById('enhToggle');
+  if (keySigToggle){
+    try { keySigToggle.checked = localStorage.getItem('keySigToggle') !== '0'; } catch {}
+    keySigToggle.addEventListener('change', () => {
+      try { localStorage.setItem('keySigToggle', keySigToggle.checked ? '1' : '0'); } catch {}
+      applyNotationTranspose(transposeSemis); // refresh key display if needed
+    });
+  }
+  if (enhToggle){
+    try { enhToggle.checked = localStorage.getItem('enhPreferFlats') === '1'; } catch {}
+    enhToggle.addEventListener('change', () => {
+      try { localStorage.setItem('enhPreferFlats', enhToggle.checked ? '1' : '0'); } catch {}
+      // Re-apply current transpose to update the key spelling if key transposition is enabled
+      applyNotationTranspose(transposeSemis);
+    });
+  }
+
+  // ---- Minimal score (AlphaTex)
+  const TEX = `\\tempo 100 .
+\\track "Marimba" \\instrument marimba
+:2 C4 D4 | :1 C4 |`;
+
+  // ---- Init AlphaTab
+  const api = new alphaTab.AlphaTabApi(container, {
+    core: { tex: true },
+    player: {
+      enablePlayer: true,
+      enableCursor: true,
+      enableElementHighlighting: false,
+      soundFont: "soundfonts/Mallets_GM.sf2",
+      scrollElement: container,
+      schedulerLookAhead: 20
+    }
+  });
+
+  try { api.isLooping = false; } catch(_) {}
+
+  // Load and render
+  api.tex(TEX);
+
+  // ---- Helpers
+  const getTickCache = () => api.tickCache ?? api.boundsLookup ?? null;
+
+  // Key sig dictionaries (plain objects)
+  const KS_TO_PC = { "-7":11, "-6":6, "-5":1, "-4":8, "-3":3, "-2":10, "-1":5, "0":0, "1":7, "2":2, "3":9, "4":4, "5":11, "6":6, "7":1 };
+  // Strict preferred keys for 0..11 (C=0)
+  // "Sharps" preference: C#, F#, B (others as defined)
+  const PC_TO_KS_SHARPS = {
+    0: 0,   // C
+    1: 7,   // C# (7 sharps)
+    2: 2,   // D (2 sharps)
+    3: -3,  // Eb (3 flats)
+    4: 4,   // E (4 sharps)
+    5: -1,  // F (1 flat)
+    6: 6,   // F# (6 sharps)
+    7: 1,   // G (1 sharp)
+    8: -4,  // Ab (4 flats)
+    9: 3,   // A (3 sharps)
+    10: -2, // Bb (2 flats)
+    11: 5   // B (5 sharps)
+  };
+  // "Flats" preference: Db, Gb, Cb
+  const PC_TO_KS_FLATS = {
+    0: 0,    // C
+    1: -5,   // Db (5 flats)
+    2: 2,    // D (2 sharps)
+    3: -3,   // Eb (3 flats)
+    4: 4,    // E (4 sharps)
+    5: -1,   // F (1 flat)
+    6: -6,   // Gb (6 flats)
+    7: 1,    // G (1 sharp)
+    8: -4,   // Ab (4 flats)
+    9: 3,    // A (3 sharps)
+    10: -2,  // Bb (2 flats)
+    11: -7   // Cb (7 flats)
+  };
+  function getCurrentKS(){
+    try {
+      if (typeof api.score?.keySignature === 'number') return api.score.keySignature;
+      const mb = api.score?.masterBars; if (mb && mb.length && typeof mb[0].keySignature === 'number') return mb[0].keySignature;
+    } catch {}
+    return 0;
+  }
+  function computePreferredKSAfterTranspose(semi){
+    const n = ((semi % 12) + 12) % 12; // normalize negatives
+    const preferFlats = !!(enhToggle && enhToggle.checked);
+    const map = preferFlats ? PC_TO_KS_FLATS : PC_TO_KS_SHARPS;
+    return map[n] ?? 0;
+  }
+  function setScoreKeySignatureVal(val){
+    try {
+      const score = api.score; if (!score) return;
+      // no-op if already set
+      let current = (typeof score.keySignature === 'number') ? score.keySignature : null;
+      if (current == null && Array.isArray(score.masterBars) && score.masterBars.length) {
+        current = score.masterBars[0].keySignature;
+      }
+      if (current === val) return;
+      if (typeof score.keySignature === 'number') score.keySignature = val;
+      if (Array.isArray(score.masterBars)){
+        for (const mb of score.masterBars){ mb.keySignature = val; }
+      }
+      try { api.updateSyncPoints(); } catch(_) {}
+      // NOTE: no render here (avoid re-entrancy)
+    } catch(e){ console.warn('setScoreKeySignatureVal failed', e); }
+  }
+
+  // ---- Notation + Audio Transpose
+  let transposeSemis = parseInt(localStorage.getItem('notationTranspose') || '0', 10) || 0;
+  function clampSemis(val){ return Math.max(-12, Math.min(12, Math.trunc(val))); }
+  function reflectTransposeUI(val){ if (transposeVal) transposeVal.textContent = String(val); }
+
+  function applyNotationTranspose(semi){
+    const clamped = clampSemis(semi);
+    if (clamped !== transposeSemis){
+      transposeSemis = clamped;
+      try { localStorage.setItem('notationTranspose', String(transposeSemis)); } catch {}
+    }
+    reflectTransposeUI(transposeSemis);
+
+    // 1) Playback transpose (no render needed)
+    try {
+      const tracks = Array.isArray(api.tracks) ? api.tracks : [];
+      if (tracks.length > 0 && typeof api.changeTrackTranspositionPitch === 'function') {
+        api.changeTrackTranspositionPitch(tracks, transposeSemis);
+      }
+    } catch (e) { console.warn('transpose playback failed', e); }
+
+    // 2) Notation transpose via settings.notation.transpositionPitches
+    try {
+      const s = api.settings || (api.settings = {});
+      s.notation = s.notation || {};
+
+      // build desired array (same semis for each track)
+      const rendered = (api.tracks && api.tracks.length) ? api.tracks.length : 0;
+      const total    = (api.score && api.score.tracks && api.score.tracks.length) ? api.score.tracks.length : 0;
+      const nTracks  = Math.max(rendered, total, 1);
+      const next     = Array.from({ length: nTracks }, () => transposeSemis);
+      const prev     = Array.isArray(s.notation.transpositionPitches) ? s.notation.transpositionPitches : [];
+      const sameArr  = prev.length === next.length && prev.every((v,i)=>v===next[i]);
+
+      // engine-side flag if supported
+      s.notation.transposeKeySignatures = !!(keySigToggle && keySigToggle.checked);
+
+      if (!sameArr) s.notation.transpositionPitches = next;
+
+      api.updateSettings();
+
+      // Update visible key AFTER settings change, once
+      if (s.notation.transposeKeySignatures){
+        const targetKS = computePreferredKSAfterTranspose(transposeSemis);
+        setScoreKeySignatureVal(targetKS);
+      }
+
+      try { api.render(); } catch {}
+    } catch (e) { console.warn('transpose notation failed', e); }
+  }
+
+  // initial UI sync
+  reflectTransposeUI(transposeSemis);
+
+  // Buttons only (no slider) to avoid duplicate calls
+  if (tDown){ tDown.addEventListener('click', () => { applyNotationTranspose(clampSemis((transposeSemis||0) - 1)); }); }
+  if (tUp){ tUp.addEventListener('click', () => { applyNotationTranspose(clampSemis((transposeSemis||0) + 1)); }); }
+  if (tReset){ tReset.addEventListener('click', () => { applyNotationTranspose(0); }); }
+
+  function getPlaybackRangeTicks() {
+    const pr = api.playbackRange || api.player?.playbackRange || null;
+    if (!pr) return { s:null, e:null, src:'none' };
+    if (typeof pr.startTick === 'number' && typeof pr.endTick === 'number') return { s: pr.startTick, e: pr.endTick, src:'playbackRange[ticks]' };
+    if (typeof pr.tickStart === 'number' && typeof pr.tickEnd === 'number') return { s: pr.tickStart, e: pr.tickEnd, src:'playbackRange[tickStart/tickEnd]' };
+    const msStart = (typeof pr.startTime === 'number') ? pr.startTime : (typeof pr.msStart === 'number' ? pr.msStart : null);
+    const msEnd   = (typeof pr.endTime === 'number') ? pr.endTime   : (typeof pr.msEnd === 'number'   ? pr.msEnd   : null);
+    if (msStart != null && msEnd != null) {
+      const tc = getTickCache();
+      if (tc && typeof tc.timeToTick === 'function') return { s: tc.timeToTick(msStart), e: tc.timeToTick(msEnd), src:'playbackRange[ms->tick]' };
+      const durMs = api?.player?.endTime ?? api?.score?.playTime ?? null;
+      const durTicks = api?.score?.duration ?? null;
+      if (durMs && durTicks) { const ratio = durTicks / durMs; return { s: Math.round(msStart * ratio), e: Math.round(msEnd * ratio), src:'playbackRange[estimate]' }; }
+    }
+    return { s:null, e:null, src:'playbackRange[unknown]' };
+  }
+
+  function currentTick() {
+    return (typeof api.tickPosition === 'number') ? api.tickPosition : (typeof api.player?.currentTick === 'number' ? api.player.currentTick : null);
+  }
+
+  // ---- Time/Tick conversion helpers
+  function ticksPerMs(){
+    const tc = getTickCache();
+    const durMs = api?.player?.endTime ?? api?.score?.playTime ?? null;
+    const durTicks = api?.score?.duration ?? null;
+    if (tc && typeof tc.timeToTick === 'function' && durMs != null && durTicks != null) {
+      const t0 = 0, t1 = 1; const tick0 = tc.timeToTick(t0); const tick1 = tc.timeToTick(t1);
+      return Math.max(1, tick1 - tick0);
+    }
+    if (durMs && durTicks) return durTicks / durMs;
+    return 1;
+  }
+  function msToTicks(ms){ return Math.max(1, Math.round(ticksPerMs() * ms)); }
+  function ticksToMs(t){ const k = ticksPerMs(); return Math.round(t / k); }
+
+  // Dynamic early seek margin (in ticks): aim ~8ms before loop end
+  let EARLY_MS = 8;
+  function computeEarlyTicks(){ return msToTicks(EARLY_MS); }
+
+  // ---- Loop state
+  let loopEnabled = false;
+  let loopStartTick = null;
+  let loopEndTick = null;
+  let seeks = 0;
+  let LOOP_SEEK_EARLY_TICKS = computeEarlyTicks();
+  let lastSeekAt = 0;
+
+  function setLoopFromActiveRange() {
+    let s=null, e=null, used='none';
+    const pr = getPlaybackRangeTicks();
+    if (typeof pr.s === 'number' && typeof pr.e === 'number' && pr.e > pr.s) { s = pr.s; e = pr.e; used = pr.src; }
+    else if (typeof api.score?.duration === 'number') { s = 0; e = api.score.duration; used = 'score.duration'; }
+    loopStartTick = s; loopEndTick = e; updateDebug(`(setLoop via ${used})`);
+    return (loopStartTick != null && loopEndTick != null);
+  }
+
+  function updateDebug(extra='') {
+    const pr = getPlaybackRangeTicks();
+    const parts = [];
+    parts.push(`PR: ${pr.s ?? '–'} / ${pr.e ?? '–'}`);
+    parts.push(`Loop: ${loopStartTick ?? '–'} / ${loopEndTick ?? '–'}`);
+    parts.push(`ct: ${currentTick() ?? '–'}`);
+    parts.push(`seeks: ${seeks}`);
+    if (extra) parts.push(extra);
+    dbg.innerHTML = '<code>' + parts.join(' | ') + '</code>';
+  }
+
+  function ensureSeekToLoopStart() {
+    const now = performance.now ? performance.now() : Date.now();
+    if (now - lastSeekAt < 15) return;
+    lastSeekAt = now;
+    try {
+      if (currentTick() >= loopEndTick) return;
+      api.tickPosition = loopStartTick ?? 0;
+      if (api.player && api.player.state !== alphaTab.synth.PlayerState.Playing) { api.play(); }
+      try { api.scrollToCursor(); } catch(_) {}
+      seeks++; updateDebug('(seek)');
+    } catch {}
+  }
+
+  // ---- UI
+  btnPlay.onclick = () => api.playPause();
+  btnStop.onclick = () => api.stop();
+
+  btnLoop.onclick = () => {
+    loopEnabled = !loopEnabled;
+    btnLoop.classList.toggle('on', loopEnabled);
+    if (loopEnabled) setLoopFromActiveRange();
+    updateDebug(loopEnabled ? '(loop:on)' : '(loop:off)');
+  };
+
+  // Set playbackRange endpoints from current tick
+  btnSetStart.onclick = () => {
+    const ct = currentTick(); if (ct == null) return;
+    const pr = getPlaybackRangeTicks();
+    const s = ct, e = (typeof pr.e === 'number' ? pr.e : (api.score?.duration ?? ct+1));
+    api.playbackRange = { startTick: Math.max(0, Math.min(s, e-1)), endTick: Math.max(s+1, e) };
+    if (loopEnabled) setLoopFromActiveRange();
+    updateDebug('(start=ct)');
+  };
+  btnSetEnd.onclick = () => {
+    const ct = currentTick(); if (ct == null) return;
+    const pr = getPlaybackRangeTicks();
+    const s = (typeof pr.s === 'number' ? pr.s : 0), e = ct;
+    api.playbackRange = { startTick: Math.max(0, Math.min(s, e-1)), endTick: Math.max(s+1, e) };
+    if (loopEnabled) setLoopFromActiveRange();
+    updateDebug('(end=ct)');
+  };
+
+  if (earlyMs && earlyVal){
+    earlyMs.addEventListener('input', ()=>{ EARLY_MS = parseInt(earlyMs.value,10)||0; earlyVal.textContent = EARLY_MS; LOOP_SEEK_EARLY_TICKS = computeEarlyTicks(); updateDebug('(early='+EARLY_MS+'ms)'); });
+  }
+
+  // ---- Events
+  const on = (em, name, handler) => { const ev = em[name] ?? em[name+'All']; if (ev && typeof ev.on === 'function') ev.on(handler); };
+
+  on(api, 'playerReady', () => { updateDebug('(playerReady)'); });
+
+  on(api, 'playerStateChanged', e => {
+    const playing = e.state === alphaTab.synth.PlayerState.Playing;
+    btnPlay.textContent = playing ? 'Pause' : 'Play';
+    if (playing && loopEnabled && loopStartTick != null) { ensureSeekToLoopStart(); }
+    updateDebug('(state)');
+  });
+
+  on(api, 'playerPositionChanged', e => {
+    if (loopEnabled && loopStartTick != null && loopEndTick != null) {
+      const ct = e.currentTick;
+      if (typeof ct === 'number' && ct >= (loopEndTick - LOOP_SEEK_EARLY_TICKS)) { ensureSeekToLoopStart(); }
+    }
+    updateDebug();
+  });
+
+  on(api, 'playbackRangeChanged', () => { if (loopEnabled) setLoopFromActiveRange(); updateDebug('(PR changed)'); });
+
+  on(api, 'scoreLoaded', () => {
+    setLoopFromActiveRange();
+    updateDebug('(scoreLoaded)');
+    LOOP_SEEK_EARLY_TICKS = computeEarlyTicks();
+    updateDebug('(recalc early='+LOOP_SEEK_EARLY_TICKS+'t ~'+ticksToMs(LOOP_SEEK_EARLY_TICKS)+'ms)');
+    applyNotationTranspose(transposeSemis);
+  });
+
+  on(api, 'midiLoaded', () => { updateDebug('(midiLoaded)'); LOOP_SEEK_EARLY_TICKS = computeEarlyTicks(); updateDebug('(recalc early='+LOOP_SEEK_EARLY_TICKS+'t ~'+ticksToMs(LOOP_SEEK_EARLY_TICKS)+'ms)'); });
+  on(api, 'midiLoad',   () => updateDebug('(midiLoad)'));
+  on(api, 'error',      (err) => console.error('AlphaTab error:', err));
+
+  on(api, 'playerFinished', () => {
+    if (!loopEnabled || loopStartTick == null) return;
+    setTimeout(() => {
+      api.tickPosition = loopStartTick;
+      api.play();
+      seeks++; updateDebug('(finished->restart)');
+    }, lateDelayMs);
+  });
+})();
+</script>
+
+</body>
+</html>

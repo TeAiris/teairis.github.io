@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>AlphaTab Full-Note Accent Test</title>
+<script src="https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/alphaTab.js"></script>
+<style>
+  body { font-family: system-ui, Arial, sans-serif; margin: 0; }
+  #sheet { width: 100vw; height: 75vh; border-bottom: 1px solid #ddd; }
+  .controls { padding: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  button { padding: 6px 10px; }
+  .k { font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+  <div id="sheet"></div>
+  <div class="controls">
+    <button id="btnRender">1) Render Score</button>
+    <button id="btnAccent">2) Accent CURRENT Beat (inline full-note)</button>
+    <button id="btnResetPrev">3) Reset PREV Beat</button>
+    <button id="btnNext">4) Next Beat ▶︎</button>
+    <button id="btnStep">Step: Reset Prev → Accent Current → Next</button>
+    <button id="btnPlayPause">▶︎ Play</button>
+    <button id="btnStop">■ Stop</button>
+    <label style="margin-left:12px;"><input id="useHook" type="checkbox" checked> hook playedBeatChanged</label>
+    <label>Accent color: <input id="accentColor" type="color" value="#ff4081"></label>
+    <label>Baseline dim (0–1): <input id="dim" type="number" min="0" max="1" step="0.05" value="0.75"></label>
+    <span class="k">idx=<span id="idx">-</span> / <span id="count">0</span></span>
+    <label style="margin-left:12px;">
+      <input id="useRenderFinished" type="checkbox"> apply after renderFinished
+    </label>
+    <label style="margin-left:12px;">
+      <input id="useTickCache" type="checkbox" checked> drive via tickCache
+    </label>
+    <span style="margin-left:12px; font-weight:600;">Now:</span>
+    <span>Beat Note = <span id="nowBeat">-</span></span>
+    <span style="margin-left:8px;">MIDI Note = <span id="nowMidi">-</span></span>
+    <span style="margin-left:8px;">Pos Ticks = <span id="nowPos">-</span></span>
+    <label style="margin-left:12px;"><input id="useMidi" type="checkbox" checked> listen midiEventsPlayed</label>
+    <label style="margin-left:12px;"><input id="warmOnLoad" type="checkbox" checked> prewarm MIDI/tickCache on load</label>
+    <button id="btnPrewarmMidi" title="Low-level: api.loadMidiForScore()">Prewarm MIDI</button>
+    <button id="btnRebuildSync" title="Low-level: MidiFileGenerator.generateSyncPoints + player.updateSyncPoints">Rebuild Sync Points</button>
+    <span id="cacheBadge" style="margin-left:8px; padding:2px 6px; border-radius:4px; background:#eee;">cache: cold</span>
+  </div>
+
+<script>
+(() => {
+  const sheet = document.getElementById('sheet');
+  const idxEl = document.getElementById('idx');
+  const cntEl = document.getElementById('count');
+  const colorInput = document.getElementById('accentColor');
+  const dimInput = document.getElementById('dim');
+  const useRF = document.getElementById('useRenderFinished');
+  const btnPlayPause = document.getElementById('btnPlayPause');
+  const btnStop = document.getElementById('btnStop');
+  const useHook = document.getElementById('useHook');
+  const nowBeatEl = document.getElementById('nowBeat');
+  const nowMidiEl = document.getElementById('nowMidi');
+  const nowPosEl  = document.getElementById('nowPos');
+  const useMidi   = document.getElementById('useMidi');
+  const useTickCache = document.getElementById('useTickCache');
+  const warmOnLoad = document.getElementById('warmOnLoad');
+  let tickCacheReady = false;
+
+  const btnPrewarmMidi = document.getElementById('btnPrewarmMidi');
+  const btnRebuildSync = document.getElementById('btnRebuildSync');
+  const cacheBadge = document.getElementById('cacheBadge');
+
+  function updateCacheBadge() {
+    cacheBadge.textContent = tickCacheReady ? 'cache: warm' : 'cache: cold';
+    cacheBadge.style.background = tickCacheReady ? '#e6ffed' : '#eee';
+    cacheBadge.style.border = tickCacheReady ? '1px solid #34c759' : '1px solid #ccc';
+  }
+
+  // ---- AlphaTab init
+  const api = new alphaTab.AlphaTabApi(sheet, {
+    core: { tex: true },
+    player: {
+      enablePlayer: true,
+      enableCursor: true,
+      enableElementHighlighting: false,
+      // AlphaTab ships a free SONiVOX SoundFont hosted on jsDelivr
+      soundFont: "https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/soundfont/sonivox.sf2"
+    },
+    display: {}
+  });
+
+  // Diagnostic listeners for SoundFont loading and errors
+  api.soundFontLoad.on(e => console.log('[AlphaTab] soundFontLoad', e.loaded, '/', e.total));
+  api.error.on(err => console.error('[AlphaTab] error:', err));
+
+  // midiLoad: tickCache is filled during MIDI generation
+  api.midiLoad.on(() => {
+    tickCacheReady = true; // tick cache is filled during MIDI generation
+    updateCacheBadge();
+    console.log('[AlphaTab] midiLoad: tickCache warmed');
+  });
+  api.midiLoaded.on(() => {
+    tickCacheReady = true; // midi file fully loaded; tickCache available
+    updateCacheBadge();
+    console.log('[AlphaTab] midiLoaded: tickCache available');
+  });
+
+  // ---- Simple tex with lots of beamed notes so stems/flags/beams exist
+  const TEX = `
+\\tempo 110 .
+\\track "Test"
+\\instrument piano
+:8 C5 D5 E5 F5 G5 A5 B5 C6 | C6 B5 A5 G5 F5 E5 D5 C5 |
+:16 C5 D5 E5 F5 G5 A5 B5 C6 D6 E6 F6 G6 A6 B6 C7 D7 |
+`;
+
+  // ---- Beat/Note element keys (filter undefined to support different versions)
+  const NS = alphaTab.model.NoteSubElement;
+  const BS = alphaTab.model.BeatSubElement;
+
+  const NOTE_KEYS_ALL = [
+    NS.StandardNotationNoteHead,
+    NS.StandardNotationAccidentals,
+    NS.StandardNotationEffects,
+    NS.StandardNotationLedgerLines,
+    NS.StandardNotationDots,
+    NS.GuitarTabFretNumber,
+    NS.StandardNotationTie,
+    NS.GuitarTabTie
+  ].filter(Boolean);
+
+  const BEAT_KEYS_ALL = [
+    BS.StandardNotationStem,
+    BS.StandardNotationFlags,
+   // BS.StandardNotationBeams,
+    BS.StandardNotationTuplet,
+    BS.StandardNotationEffects,
+    BS.StandardNotationRests,
+    BS.StandardNotationGraceBeams,
+    BS.StandardNotationGraceFlags,
+    BS.GuitarTabStem,
+    BS.GuitarTabFlags,
+    BS.GuitarTabBeams,
+    BS.GuitarTabTuplet,
+    BS.GuitarTabEffects
+  ].filter(Boolean);
+
+  // ---- Helpers
+  const clamp01 = v => Math.max(0, Math.min(1, v));
+  const hexToRgb = hex => {
+    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return m ? { r: parseInt(m[1],16), g: parseInt(m[2],16), b: parseInt(m[3],16) } : { r:0,g:0,b:0 };
+  };
+  const rgbToHex = (r,g,b) => '#' + [r,g,b].map(n => Math.max(0,Math.min(255,n)).toString(16).padStart(2,'0')).join('');
+  const dimToward = (hex, towardHex, factor) => {
+    const a = hexToRgb(hex), b = hexToRgb(towardHex);
+    const rr = Math.round(a.r*factor + b.r*(1-factor));
+    const gg = Math.round(a.g*factor + b.g*(1-factor));
+    const bb = Math.round(a.b*factor + b.b*(1-factor));
+    return rgbToHex(rr,gg,bb);
+  };
+
+  // MIDI helpers: convert midi number to note name (C, C#, D, ... with octave)
+  function midiToName(m) {
+    if (typeof m !== 'number' || !Number.isFinite(m)) return '-';
+    const N = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+    const pc = ((m % 12) + 12) % 12;
+    const oct = Math.floor(m / 12) - 1; // MIDI octave mapping (C4=60)
+    return `${N[pc]}${oct}`;
+  }
+  function topNoteOfBeat(beat) {
+    let top = null;
+    for (const n of beat?.notes || []) if (typeof n?.realValue === 'number' && (top === null || n.realValue > top.realValue)) top = n;
+    return (top && typeof top.realValue === 'number') ? top.realValue : null;
+  }
+
+  const defaultToward = () => {
+    // In light mode, dim toward black; in dark UIs you could change this to white.
+    return '#000000';
+  };
+
+  const ensureBeatStyle = beat => { if (!beat.style) beat.style = new alphaTab.model.BeatStyle(); };
+  const ensureNoteStyle = note => { if (!note.style) note.style = new alphaTab.model.NoteStyle(); };
+
+  // ---- Baseline coloring (dim everything so accent is obvious)
+  function baselineColorScore(score, dimFactor) {
+    const toward = defaultToward();
+    for (const track of score.tracks || [])
+      for (const staff of track.staves || [])
+        for (const bar of staff.bars || [])
+          for (const voice of bar.voices || [])
+            for (const beat of voice.beats || []) {
+              // Beat-level
+              ensureBeatStyle(beat);
+              const stemCol = alphaTab.model.Color.fromJson(dimToward('#888888', toward, dimFactor));
+              for (const k of BEAT_KEYS_ALL) beat.style.colors.set(k, stemCol);
+
+              // Note-level
+              for (const n of beat.notes || []) {
+                ensureNoteStyle(n);
+                const nh = alphaTab.model.Color.fromJson(dimToward('#666666', toward, dimFactor));
+                for (const k of NOTE_KEYS_ALL) n.style.colors.set(k, nh);
+              }
+            }
+  }
+
+  // ---- Accent / Reset only a specific beat
+  function accentBeatFull(beat, hex) {
+    const A = alphaTab.model;
+    const c = A.Color.fromJson(hex);
+    ensureBeatStyle(beat);
+    for (const k of BEAT_KEYS_ALL) beat.style.colors.set(k, c);
+    for (const n of beat.notes || []) {
+      ensureNoteStyle(n);
+      const pcCol = c; // for the test we use same color for head/accidentals/etc.
+      for (const k of NOTE_KEYS_ALL) n.style.colors.set(k, pcCol);
+    }
+  }
+
+  function resetBeatToBaseline(beat, dimFactor) {
+    const toward = defaultToward();
+    const A = alphaTab.model;
+    const cBeat = A.Color.fromJson(dimToward('#888888', toward, dimFactor));
+    const cNote = A.Color.fromJson(dimToward('#666666', toward, dimFactor));
+    ensureBeatStyle(beat);
+    for (const k of BEAT_KEYS_ALL) beat.style.colors.set(k, cBeat);
+    for (const n of beat.notes || []) {
+      ensureNoteStyle(n);
+      for (const k of NOTE_KEYS_ALL) n.style.colors.set(k, cNote);
+    }
+  }
+
+  // ---- Collect beats in a simple linear list (track 0, staff 0, voice 0)
+  function collectBeats(score) {
+    const arr = [];
+    const t = score?.tracks?.[0];
+    const s = t?.staves?.[0];
+    if (!s) return arr;
+    for (const bar of s.bars || [])
+      for (const voice of bar.voices || [])
+        for (const beat of voice.beats || [])
+          arr.push(beat);
+    return arr;
+  }
+
+  // ---- State for the test
+  let beats = [];
+  let i = -1;      // current index
+  let prev = null; // previous beat reference
+
+  function refreshCounters() {
+    idxEl.textContent = i;
+    cntEl.textContent = beats.length;
+  }
+
+  // ---- Playback controls & wiring
+  btnPlayPause.onclick = () => api.playPause();
+  btnStop.onclick = () => api.stop();
+
+  // keep button label in sync with player state
+  api.playerStateChanged.on(e => {
+    const playing = e.state === alphaTab.synth.PlayerState.Playing;
+    btnPlayPause.textContent = playing ? '⏸ Pause' : '▶︎ Play';
+  });
+
+  // Position ticks (proves playerPositionChanged is firing)
+  api.playerPositionChanged.on(e => {
+    try { nowPosEl.textContent = String(e?.currentTick ?? e?.currentTime ?? '-'); } catch {}
+  });
+
+  // don't let user interact before player is ready (optional safety)
+  btnPlayPause.disabled = true;
+  btnStop.disabled = true;
+  api.playerReady.on(() => {
+    btnPlayPause.disabled = false;
+    btnStop.disabled = false;
+    console.log('[AlphaTab] playerReady: soundfont + midi loaded');
+  });
+
+  // Hook playedBeatChanged -> reset prev, accent current, render
+  let lastPlayedBeat = null;
+  api.playedBeatChanged.on(e => {
+    if (!useHook.checked) return; // allow isolating playback vs manual stepping
+    const b = e?.beat;
+    if (!b) return;
+
+    // Reset previous to baseline first
+    if (lastPlayedBeat) {
+      const dimFactor = clamp01(parseFloat(dimInput.value) || 0.75);
+      resetBeatToBaseline(lastPlayedBeat, dimFactor);
+    }
+
+    // Accent current beat fully
+    const hex = colorInput.value || '#ff4081';
+    if (useRF.checked) {
+      // Optional deferred path: apply after next renderFinished
+      const applyOnce = () => {
+        accentBeatFull(b, hex);
+        api.render();
+        api.renderFinished.off(applyOnce);
+      };
+      api.renderFinished.on(applyOnce);
+    } else {
+      accentBeatFull(b, hex);
+      api.render();
+    }
+
+    lastPlayedBeat = b;
+
+    // UI: show top note of this beat
+    const tn = topNoteOfBeat(b);
+    nowBeatEl.textContent = tn == null ? '-' : midiToName(tn);
+  });
+
+  // ===== TickCache-driven playback accent (fallback when playedBeatChanged is silent) =====
+  let lastTickBeat = null;
+  api.playerPositionChanged.on(e => {
+    if (!useHook.checked) return;           // master on/off
+    if (!useTickCache.checked) return;      // only when tickCache mode is enabled
+    if (!tickCacheReady) {
+      // one-shot prewarm if user disabled auto-prewarm but playback started
+      if (api.isReadyForPlayback) {
+        try { api.loadMidiForScore(); } catch {}
+      }
+      return;
+    }
+
+    const tick = (e?.currentTick ?? null);
+    const cache = api.tickCache;
+    if (!cache || tick == null) return;
+
+    // Maintain a hint across lookups for stable/fast results during playback
+    if (window.__at_tickHint === undefined) window.__at_tickHint = null;
+    const res = cache.findBeat(new Set([0]), tick, window.__at_tickHint);
+    window.__at_tickHint = res || window.__at_tickHint;
+
+    // Correct property per docs: MidiTickLookupFindBeatResult.beat (not currentBeat)
+    const b = res?.beat;
+    if (!b || lastTickBeat === b) return;
+
+    // Reset previous beat to baseline
+    if (lastTickBeat) {
+      const dimFactor = clamp01(parseFloat(dimInput.value) || 0.75);
+      resetBeatToBaseline(lastTickBeat, dimFactor);
+    }
+
+    // Accent the new beat fully and render
+    const hex = colorInput.value || '#ff4081';
+    accentBeatFull(b, hex);
+    api.render();
+
+    // Update UI readout with the top note of this beat
+    const tn = topNoteOfBeat(b);
+    nowBeatEl.textContent = tn == null ? '-' : midiToName(tn);
+
+    lastTickBeat = b;
+  });
+
+  // MIDI NoteOn -> show highest note name from the event batch
+  try {
+    if (api.midiEventsPlayed && 'midiEventsPlayedFilter' in api && alphaTab?.midi?.MidiEventType) {
+      api.midiEventsPlayedFilter = [alphaTab.midi.MidiEventType.NoteOn];
+      api.midiEventsPlayed.on(e => {
+        if (!useMidi.checked) return;
+        let best = null;
+        for (const ev of e?.events || []) {
+          const type = ev.type || ev.eventType || ev.kind;
+          const isOn = type === alphaTab.midi.MidiEventType.NoteOn || ev.isNoteOn;
+          if (!isOn) continue;
+          const n = ev.note ?? ev.noteNumber ?? ev.key ?? ev.data1;
+          if (typeof n !== 'number') continue;
+          if (best == null || n > best) best = n;
+        }
+        nowMidiEl.textContent = best == null ? '-' : midiToName(best);
+      });
+    }
+  } catch (err) {
+    console.warn('midiEventsPlayed not available', err);
+  }
+
+  // ---- Buttons
+  document.getElementById('btnRender').onclick = () => {
+    api.tex(TEX);
+  };
+
+  document.getElementById('btnAccent').onclick = () => {
+    if (i < 0 || i >= beats.length) return;
+    const hex = colorInput.value || '#ff4081';
+    accentBeatFull(beats[i], hex);
+    api.render(); // commit style changes (required per docs)
+  };
+
+  document.getElementById('btnResetPrev').onclick = () => {
+    if (!prev) return;
+    const dimFactor = clamp01(parseFloat(dimInput.value) || 0.75);
+    resetBeatToBaseline(prev, dimFactor);
+    api.render();
+  };
+
+  document.getElementById('btnNext').onclick = () => {
+    if (beats.length === 0) return;
+    i = (i + 1) % beats.length;
+    refreshCounters();
+  };
+
+  document.getElementById('btnStep').onclick = () => {
+    // Reset previous → accent current → next (all with explicit renders)
+    if (prev) {
+      const dimFactor = clamp01(parseFloat(dimInput.value) || 0.75);
+      resetBeatToBaseline(prev, dimFactor);
+    }
+    if (i >= 0 && i < beats.length) {
+      const hex = colorInput.value || '#ff4081';
+      if (useRF.checked) {
+        // Safer path: wait for AlphaTab’s frame to finish, then apply and re-render
+        const applyOnce = () => {
+          accentBeatFull(beats[i], hex);
+          api.render();
+          api.renderFinished.off(applyOnce);
+          const tn = topNoteOfBeat(beats[i]);
+          nowBeatEl.textContent = tn == null ? '-' : midiToName(tn);
+        };
+        api.renderFinished.on(applyOnce);
+      } else {
+        accentBeatFull(beats[i], hex);
+        api.render();
+        const tn = topNoteOfBeat(beats[i]);
+        nowBeatEl.textContent = tn == null ? '-' : midiToName(tn);
+      }
+      prev = beats[i];
+    }
+    i = (i + 1) % Math.max(1, beats.length);
+    refreshCounters();
+  };
+
+  // ---- Hook score load: build baseline & beat list
+  api.scoreLoaded.on(score => {
+    // Allow manual play/stop once we have a score; full readiness will still flip via playerReady
+    btnPlayPause.disabled = false;
+    btnStop.disabled = false;
+
+    // baseline (dim everything so accent is obvious)
+    const dimFactor = clamp01(parseFloat(dimInput.value) || 0.75);
+    baselineColorScore(score, dimFactor);
+
+    // collect beats and reset pointers
+    beats = collectBeats(score);
+    i = beats.length > 0 ? 0 : -1;
+    prev = null;
+    refreshCounters();
+
+    lastPlayedBeat = null;
+    lastTickBeat = null;
+
+    tickCacheReady = false; // new score invalidates old cache
+    updateCacheBadge();
+  // Low-level: force MIDI generation to warm tick cache
+  btnPrewarmMidi.onclick = () => {
+    try { api.loadMidiForScore(); } catch (err) { console.warn('loadMidiForScore failed', err); }
+  };
+
+  // Low-level: rebuild sync points immediately (without regenerating MIDI)
+  btnRebuildSync.onclick = () => {
+    try {
+      if (!api.score) return;
+      // Compute fresh sync points for current score
+      const points = alphaTab.midi.MidiFileGenerator.generateSyncPoints(api.score, true);
+      // Prefer direct synth update if available
+      if (api.player && typeof api.player.updateSyncPoints === 'function') {
+        api.player.updateSyncPoints(points);
+      } else if (typeof api.updateSyncPoints === 'function') {
+        // Fallback to high-level trigger
+        api.updateSyncPoints();
+      }
+      console.log('[AlphaTab] sync points rebuilt:', points?.length ?? 0);
+    } catch (err) {
+      console.warn('rebuild sync points failed', err);
+    }
+  };
+    if (warmOnLoad.checked) {
+      // Ensure a MIDI is built for the current score without starting playback
+      // This fills the tick cache and fires midiLoad/midiLoaded
+      const prewarm = () => {
+        try { api.loadMidiForScore(); } catch (err) { console.warn('loadMidiForScore failed', err); }
+      };
+      if (api.isReadyForPlayback) prewarm();
+      else {
+        const once = () => { api.playerReady.off(once); prewarm(); };
+        api.playerReady.on(once);
+      }
+    }
+
+    api.render();
+  });
+
+  // (Optional) show how you could drive the CSS highlight color while testing
+  api.playedBeatChanged.on(e => {
+    // you can set a CSS hue here if you want to compare CSS vs inline
+    // document.documentElement.style.setProperty('--hl-color', '#00bcd4');
+  });
+
+// Render a score immediately on startup
+api.tex(TEX);
+updateCacheBadge();
+})();
+</script>
+</body>
+</html>
