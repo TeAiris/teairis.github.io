@@ -20,14 +20,16 @@
     .spacer { flex:1; }
 
     /* Cursors / overlays */
-    .at-cursor-bar { background: rgba(86,199,222,0.48); }
     .at-selection div{
       background: transparent !important;
-      border-top: 3px solid var(--hl-color, rgba(64,64,255,0.7));
-      border-bottom: 3px solid var(--hl-color, rgba(64,64,255,0.7));
-      border-left: none !important; border-right: none !important; border-radius: 0;
-      box-sizing: border-box; pointer-events: none;
+      /* Use inset shadows for top/bottom lines so the box size doesn't expand */
+      box-shadow: inset 0 3px var(--hl-color, rgba(64,64,255,0.7)), inset 0 -3px var(--hl-color, rgba(64,64,255,0.7));
+      border: none !important;
+      border-radius: 0;
+      box-sizing: border-box;
+      pointer-events: none;
     }
+
     .at-cursor-beat { background: rgba(0,0,0,0.1); width: 3px; }
     .at-highlight * { fill: var(--hl-color, currentColor); stroke: var(--hl-color, currentColor); }
 
@@ -727,20 +729,29 @@ if (btnNextNote) btnNextNote.onclick = () => {
       const map = STATE.preferFlats ? PC_TO_KS_FLATS : PC_TO_KS_SHARPS;
       return map[n] ?? 0;
     }
+    
     function setScoreKeySignatureVal(val){
       try {
         const score = api.score; if (!score) return;
-        let current = (typeof score.keySignature === 'number') ? score.keySignature : null;
-        if (current == null && Array.isArray(score.masterBars) && score.masterBars.length) {
-          current = score.masterBars[0].keySignature;
+        const mbs = Array.isArray(score.masterBars) ? score.masterBars : [];
+        if (mbs.length === 0) return;
+
+        // Detect bars that begin a key region: bar 0, and any bar where KS differs from the previous bar
+        const changePoints = [0];
+        for (let i = 1; i < mbs.length; i++) {
+          if (mbs[i].keySignature !== mbs[i - 1].keySignature) {
+            changePoints.push(i);
+          }
         }
-        if (current === val) return;
-        if (typeof score.keySignature === 'number') score.keySignature = val;
-        if (Array.isArray(score.masterBars)){
-          for (const mb of score.masterBars){ mb.keySignature = val; }
+
+        // Update only those explicit bars
+        for (const idx of changePoints) {
+          try { mbs[idx].keySignature = val; } catch {}
         }
-        try { api.updateSyncPoints(); } catch(_) {}
-      } catch(e){ console.warn('setScoreKeySignatureVal failed', e); }
+
+        // Do not overwrite every bar; keep existing regions unaffected
+        try { api.updateSyncPoints?.(); } catch(_) {}
+      } catch(e){ console.warn('setScoreKeySignatureVal (selective) failed', e); }
     }
 
     function applyNotationTranspose(semi){
@@ -851,15 +862,85 @@ if (btnNextNote) btnNextNote.onclick = () => {
     });
 
     // tempo
-    const debouncedRender = debounce((bpm) => renderScoreWithBpm(bpm), 150);
-    tempoVal.textContent = tempoSlider.value;
-    tempoSlider.addEventListener('input', () => {
-      const bpm = parseInt(tempoSlider.value,10) || STATE.currentBpm;
-      tempoVal.textContent = bpm;
-      api.playbackSpeed = 1.0;
-      debouncedRender(bpm);
-    });
-    tempoSlider.addEventListener('change', () => tempoSlider.dataset.touched = '1');
+
+    // === Tempo drag handling (pause on drag, resume on release)
+let _tempoDrag = {
+  wasPlaying: false,
+  resumeTick: 0,
+  active: false
+};
+
+function beginTempoDrag(){
+  if (_tempoDrag.active) return;
+  _tempoDrag.active = true;
+  try {
+    _tempoDrag.wasPlaying = (STATE.api?.player?.state === alphaTab.synth.PlayerState.Playing);
+    _tempoDrag.resumeTick = (typeof STATE.api?.tickPosition === 'number') ? STATE.api.tickPosition : 0;
+    if (_tempoDrag.wasPlaying) STATE.api.pause();
+  } catch {}
+}
+
+function endTempoDrag(){
+  if (!_tempoDrag.active) return;
+  _tempoDrag.active = false;
+  const bpm = parseInt(tempoSlider.value,10) || STATE.currentBpm;
+  applyBpmAndMaybeResume(bpm, _tempoDrag.wasPlaying, _tempoDrag.resumeTick);
+}
+
+// Set BPM, re-render, then resume at previous tick if desired
+function applyBpmAndMaybeResume(bpm, shouldResume, resumeTick){
+  STATE.currentBpm = bpm;
+  const ct = (typeof resumeTick === 'number') ? resumeTick :
+             (typeof STATE.api?.tickPosition === 'number' ? STATE.api.tickPosition : 0);
+  try {
+    STATE.api.tex(TEX_TEMPLATE(STATE.currentBpm));
+    const once = () => {
+      try { STATE.api.midiLoaded.off(once); } catch {}
+      try { STATE.api.tickPosition = ct; } catch {}
+      if (shouldResume) {
+        try { STATE.api.play(); } catch {}
+      }
+    };
+    try { STATE.api.midiLoaded.on(once); } catch {}
+  } catch (e) { console.warn('applyBpmAndMaybeResume failed', e); }
+}
+   const debouncedRender = debounce((bpm) => renderScoreWithBpm(bpm), 150);
+  tempoVal.textContent = tempoSlider.value;
+
+  // While dragging: update label only, don't re-tex (keeps audio from stopping)
+  tempoSlider.addEventListener('input', () => {
+    const bpm = parseInt(tempoSlider.value,10) || STATE.currentBpm;
+    tempoVal.textContent = bpm;
+    api.playbackSpeed = 1.0;
+  });
+
+  // Mark the slider as touched at least once
+  tempoSlider.addEventListener('change', () => {
+    tempoSlider.dataset.touched = '1';
+  });
+
+  // Pause when user grabs the knob
+  tempoSlider.addEventListener('pointerdown', beginTempoDrag);
+  tempoSlider.addEventListener('mousedown', beginTempoDrag);
+  tempoSlider.addEventListener('touchstart', beginTempoDrag, { passive: true });
+
+  // On release, apply BPM and resume if it was playing before
+  const _endDragOnce = () => {
+    endTempoDrag();
+    window.removeEventListener('pointerup', _endDragOnce);
+    window.removeEventListener('mouseup', _endDragOnce);
+    window.removeEventListener('touchend', _endDragOnce);
+  };
+  tempoSlider.addEventListener('pointerdown', () => {
+    window.addEventListener('pointerup', _endDragOnce);
+  });
+  tempoSlider.addEventListener('mousedown', () => {
+    window.addEventListener('mouseup', _endDragOnce);
+  });
+  tempoSlider.addEventListener('touchstart', () => {
+    window.addEventListener('touchend', _endDragOnce);
+  }, { passive: true });
+
 
     // opacity
     opacityVal.textContent = parseFloat(opacitySlider.value).toFixed(2);
