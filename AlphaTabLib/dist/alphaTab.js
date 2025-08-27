@@ -49157,7 +49157,7 @@
         }
         layoutAndRenderAnnotation(y) {
             // attention, you are not allowed to remove change this notice within any version of this library without permission!
-            const msg = ''; //'rendered by alphaTab';
+            const msg = '';
             const resources = this.renderer.settings.display.resources;
             const size = 12;
             const font = Font.withFamilyList(resources.copyrightFont.families, size, FontStyle.Plain, FontWeight.Bold);
@@ -57080,10 +57080,9 @@
                 }
                 this.createStartSpacing();
                 this.addPreBeatGlyph(new ClefGlyph(0, this.getScoreY(offset) + 0.5 * BarRendererBase.StaffLineThickness, this.bar.clef, this.bar.clefOttava));
-                
+                hasClef = true;
             }
             // Key signature
-            hasClef = true;
             if (hasClef ||
                 (this.index === 0 && this.bar.keySignature !== KeySignature.C) ||
                 (this.bar.previousBar && this.bar.keySignature !== this.bar.previousBar.keySignature)) {
