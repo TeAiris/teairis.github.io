@@ -13,47 +13,230 @@
     @font-face { font-family: 'MuseJazzText'; src: url('fonts/musejazz/MuseJazzText.otf') format('opentype'); font-display: swap; }
 
     body { margin: 0; font-family: 'MuseJazzText', system-ui, Arial, sans-serif; }
-    #sheet { width: 100vw; height: 80vh; position: relative; isolation: isolate; }
+    /* === Theme Variables === */
+    :root {
+      /* === Theme === */
+      --ui-fg: #111;
+      --ui-bg: #fff;
+
+      /* === Cursor (vertical playhead) === */
+      --cursor-color: rgba(255,150,0,.2);   /* retain your current value */
+      --cursor-alpha: .2;                    /* separate opacity for cursor visuals */
+      --cursor-width: 1000px;                   /* slim playhead width */
+      --cursor-glow: 100px;                  /* retain current glow */
+      --cursor-offset-x: -5px;              /* new: nudge cursor left (negative = left, positive = right) */
+
+      /* === Bar highlight (current bar overlay) === */
+      --bar-highlight-color: rgba(86,199,222,0);
+
+      /* === Loop selection guide lines === */
+      --loop-line-color: var(--hl-color, rgba(64,64,255,0.1));
+      --loop-line-glow: 6px;          /* retain your current */
+      --loop-line-offset: 40px;       /* retain your current */
+      --loop-line-thickness: 4px;     /* retain your current */
+
+      /* === Notation divider === */
+      --notation-divider-color-light: rgba(0,0,0,0.12);
+      --notation-divider-color-dark:  rgba(255,255,255,0.18);
+
+      /* === Notation resizer (drag handle) === */
+      --resizer-height: 12px;
+      --resizer-line-color-light: rgba(0,0,0,0.18);
+      --resizer-line-color-dark:  rgba(255,255,255,0.28);
+      --resizer-mark-color-light: rgba(0,0,0,0.45);
+      --resizer-mark-color-dark:  rgba(255,255,255,0.6);
+
+      /* === Note/assist highlight === */
+      --hl-color: rgba(64,64,255,0.6); /* starter value; JS may override at runtime */
+        /* === Radii & glow tuning === */
+        --radius-sm: 4px;
+        --radius-md: 8px;
+        --radius-lg: 12px;
+        --cursor-glow-outer: 22px; /* additional outer glow size */
+    }
+    body.dark {
+      --ui-fg: #fff;
+      --ui-bg: #000;
+      --cursor-color: rgba(0,100,255,.2);   /* retain your current dark value */
+    }
+
+    /* Notation wrapper controls size; #sheet fills it */
+    #notationWrap { position: relative; width: 100%; height: 80vh; display: block; overflow: auto; border-radius: var(--radius-lg); }
+    #sheet { width: 100%; height: 100%; position: relative; isolation: isolate; }
+
+    /* Divider at the bottom of the notation area (above the UI below) */
+    .notation-divider{ position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--notation-divider-color-light); pointer-events: none; }
+    body.dark .notation-divider{ background: var(--notation-divider-color-dark); }
+    /* Draggable resize bar at bottom of notation area */
+    .notation-resizer{
+      position: sticky; /* stays at bottom edge while scrolling */
+      left: 0; right: 0; bottom: 0;
+      height: var(--resizer-height);
+      background: linear-gradient(to bottom,
+        transparent 0,
+        transparent calc(var(--resizer-height) - 4px),
+        var(--resizer-line-color-light) calc(var(--resizer-height) - 4px),
+        var(--resizer-line-color-light) calc(var(--resizer-height) - 3px),
+        transparent calc(var(--resizer-height) - 3px)
+      );
+      cursor: ns-resize;
+      z-index: 3;
+    }
+    .notation-resizer::after{
+      content: '↕';
+      position: absolute;
+      left: 50%; top: 0;
+      transform: translate(-50%, 0);
+      font-family: 'MuseJazzText', system-ui, sans-serif;
+      font-size: 12px; line-height: 12px;
+      color: var(--resizer-mark-color-light);
+      pointer-events: none;
+    }
+    body.dark .notation-resizer{
+      background: linear-gradient(to bottom,
+        transparent 0,
+        transparent calc(var(--resizer-height) - 4px),
+        var(--resizer-line-color-dark) calc(var(--resizer-height) - 4px),
+        var(--resizer-line-color-dark) calc(var(--resizer-height) - 3px),
+        transparent calc(var(--resizer-height) - 3px)
+      );
+    }
+    body.dark .notation-resizer::after{ color: var(--resizer-mark-color-dark); }
+    .notation-resizer:hover{ filter: brightness(1.05); }
     .controls { display:flex; gap:8px; align-items:center; padding:10px; border-top:1px solid #ddd; flex-wrap: wrap; }
-    .controls button { padding:6px 10px; }
+    .controls button { padding:6px 10px; border-radius: var(--radius-md); }
+    .controls input, .controls select { border-radius: var(--radius-sm); }
     .controls .at-loop.active { background: rgba(0,128,0,0.15); border:1px solid rgba(0,128,0,0.35); }
     .spacer { flex:1; }
 
     /* Cursors / overlays */
-    .at-cursor-bar { background: rgba(86,199,222,0.48); }
+    .at-cursor-bar { background: var(--bar-highlight-color); }
     .at-selection div{
       background: transparent !important;
-      border-top: 3px solid var(--hl-color, rgba(64,64,255,0.7));
-      border-bottom: 3px solid var(--hl-color, rgba(64,64,255,0.7));
-      border-left: none !important; border-right: none !important; border-radius: 0;
-      box-sizing: border-box; pointer-events: none;
+      border: none !important; /* remove in-staff borders that intersect notes */
+      position: relative;      /* enable pseudo-elements positioning */
+      box-sizing: border-box;
+      pointer-events: none;
+      overflow: visible;       /* allow guide lines to extend outside */
     }
-    .at-cursor-beat { background: rgba(0,0,0,0.1); width: 3px; }
+
+    /* Ensure overlay can show the extended guide lines */
+    #sheet .at-overlay { overflow: hidden; }
+
+    /* Loop guides rendered well above and below the staff */
+    .at-selection div::before,
+    .at-selection div::after{
+      content: '';
+      position: absolute;
+      left: 0; right: 0;            /* clamp to the selection box */
+      height: var(--loop-line-thickness);
+      background: var(--loop-line-color);
+      box-shadow: 0 0 8px rgba(0,0,0,0.1), 0 0 var(--loop-line-glow) currentColor;
+      pointer-events: none;
+    }
+    .at-selection div::before{ top: calc(-1 * var(--loop-line-offset)); }
+    .at-selection div::after{  bottom: calc(-1 * var(--loop-line-offset)); }
+
+    .at-cursor, .at-cursor-beat {
+      background: rgb(from var(--cursor-color) r g b / var(--cursor-alpha)) !important;
+      width: var(--cursor-width) !important;
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.5), 0 0 var(--cursor-glow) rgb(from var(--cursor-color) r g b / var(--cursor-alpha));
+      translate: var(--cursor-offset-x) 0; /* uses individual transform property so it COMBINES with AlphaTab's inline transform */
+      border-radius: var(--radius-md);
+      overflow: hidden; /* clip fill to rounded corners */
+      pointer-events: none;
+    }
+
+    /* Bar overlay should NOT use the pink cursor color/glow */
+    .at-cursor-bar {
+      background: var(--bar-highlight-color) !important;
+      box-shadow: none !important;
+      width: auto; /* let AlphaTab size the bar */
+      translate: var(--cursor-offset-x) 0; /* additive; won’t override AlphaTab's transform */
+      border-radius: var(--radius-sm);
+      pointer-events: none;
+    }
     .at-highlight * { fill: var(--hl-color, currentColor); stroke: var(--hl-color, currentColor); }
 
+    /* Layer order: notation (0) < selection (1) < overlay (2) < cursors (5) */
     #sheet .at-viewport, #sheet .at-viewport svg, #sheet svg { position: relative; z-index: 0; }
-    #sheet .at-overlay { position: relative; z-index: 1; }
-    #sheet .at-selection, #sheet .at-cursor, #sheet .at-cursor-beat, #sheet .at-cursor-bar { background: transparent !important; }
+    #sheet .at-selection { position: relative; z-index: 1; }
+    #sheet .at-overlay  { position: relative; z-index: 2; }
+    #sheet .at-cursor, #sheet .at-cursor-beat, #sheet .at-cursor-bar { position: relative; z-index: 5; }
 
     /* Light/Dark */
-    :root { --ui-fg:#111; --ui-bg:#fff; }
     body { background: var(--ui-bg); color: var(--ui-fg); }
     .controls, .controls label, .controls span, .controls button { color: inherit; }
 
-    body.dark { --ui-fg:#fff; --ui-bg:#000; }
     body.dark #sheet { background: transparent; }
     body.dark #sheet svg { background: transparent !important; color:#000 !important; }
     body.dark #sheet svg rect[fill="#ffffff"], body.dark #sheet svg rect[fill="#fff"], body.dark #sheet svg rect[fill="white"] { fill: transparent !important; }
     body.dark .controls button { background: rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.25); }
     body.dark input[type="range"]::-webkit-slider-thumb,
     body.dark input[type="range"]::-moz-range-thumb { background:#fff; }
+
+    /* Composer tweaks */
+    .composer label { font-size: 13px; }
+    .composer input[type="text"],
+    .composer input[type="number"],
+    .composer select { padding:4px 6px; }
+    .composer button { padding:6px 10px; }
   </style>
 </head>
 <body>
-  <div id="sheet"></div>
+  <div id="notationWrap">
+    <div id="sheet"></div>
+    <div class="notation-divider" aria-hidden="true"></div>
+    <div class="notation-resizer" title="Drag to resize notation height" aria-hidden="true"></div>
+  </div>
+
+  <!-- Composer: Smart AlphaTex fields (Title, Tempo, Key, Body) -->
+  <div class="composer" style="padding:10px; border-top:1px solid #ddd; display:flex; flex-direction:column; gap:8px;">
+    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+      <label>Title:
+        <input id="compTitle" type="text" placeholder="Untitled" style="min-width:240px;">
+      </label>
+      <label>Tempo:
+        <input id="compTempo" type="number" min="40" max="280" step="1" value="110" style="width:80px;">
+      </label>
+      <label>Key:
+        <select id="compKey" title="Key signature">
+          <option value="">(none)</option>
+          <option value="C">C major</option>
+          <option value="G">G major</option>
+          <option value="D">D major</option>
+          <option value="A">A major</option>
+          <option value="E">E major</option>
+          <option value="B">B major</option>
+          <option value="F#">F# major</option>
+          <option value="C#">C# major</option>
+          <option value="F">F major</option>
+          <option value="Bb">Bb major</option>
+          <option value="Eb">Eb major</option>
+          <option value="Ab">Ab major</option>
+          <option value="Db">Db major</option>
+          <option value="Gb">Gb major</option>
+          <option value="Cb">Cb major</option>
+        </select>
+      </label>
+      <button id="compApply" title="Render the score from the fields">Apply Score</button>
+      <label style="display:flex; align-items:center; gap:6px;">
+        <input id="compAuto" type="checkbox"> Auto-apply
+      </label>
+    </div>
+    <label style="display:block;">Score (AlphaTex body only):
+      <textarea id="compBody" rows="5" spellcheck="false" style="width:100%; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:13px; padding:8px; resize:vertical;" placeholder=":4 C4 D4 E4 F4 | G4 A4 B4 C5"></textarea>
+    </label>
+  </div>
 
   <div class="controls">
     <!-- transport -->
+    <span style="margin-left:12px;">Layout:
+      <select id="layoutMode" title="Score layout mode">
+        <option value="page">Vertical</option>
+        <option value="horizontal">Horizontal</option>
+      </select>
+    </span>
     <button id="play" disabled>Play</button>
     <button id="stop" disabled>Stop</button>
     <button id="loop" class="at-loop" aria-pressed="false" title="Toggle Loop (L)">Loop</button>
@@ -155,7 +338,7 @@
 
     //Next/Previous Note Highlighting
     let highlightedNoteIdx = -1; // -1 means nothing selected
-    let highlightNotesList = [];  
+    let highlightNotesList = [];
 
     // Runtime state grouped up-front (C#-style “fields”)
     const STATE = {
@@ -221,6 +404,21 @@
     const metroToggle = document.getElementById('metroToggle');
     const metroVol = document.getElementById('metroVol');
 
+    // Notation wrapper + resizer
+    const notationWrap = document.getElementById('notationWrap');
+    const notationResizer = document.querySelector('.notation-resizer');
+
+    // Layout mode selector
+    const layoutModeSelect = document.getElementById('layoutMode');
+
+    // Composer DOM
+    const compTitle = document.getElementById('compTitle');
+    const compTempo = document.getElementById('compTempo');
+    const compKey   = document.getElementById('compKey');
+    const compBody  = document.getElementById('compBody');
+    const compApply = document.getElementById('compApply');
+    const compAuto  = document.getElementById('compAuto');
+
     // Get your buttons
 const btnPrevNote = document.getElementById('prevNote');
 const btnNextNote = document.getElementById('nextNote');
@@ -243,14 +441,52 @@ if (btnNextNote) btnNextNote.onclick = () => {
     /* =========================
        AlphaTab init + TEX
        ========================= */
-    const TEX_TEMPLATE = (bpm) => `
-\\tempo ${bpm} .
-\\track "Marimba"
-\\instrument marimba
-:4 (C4){ch "Cmaj7"} D4 E4 c3{ beam down } | (G4){ch "Dm7"} A4 B4 C5 |
-:4 (C5){ch "G7"} B4 A4 G4 | (F4){ch "Cmaj7"} E4 D4 C4 |
-:8 (C4){ch "Fmaj7"} D4 E4 F4 G4 A4 B4 C5 | (E4){ch "Em7"} F4 G4 A4 B4 C5 D5 E5 |
-:8 (A4){ch "A7"} G4 F4 E4 D4 C4 B3 A3 | :4 (G4){ch "G7"} F4 E4 D4`;
+    const TEX_TEMPLATE = (bpm) => buildTexFromUI(bpm);
+
+    function buildTexFromUI(overrideBpm = null, includeKey = true){
+      const rawTitle = (compTitle?.value ?? '').toString();
+      const cleanTitleSrc = (/^(null|undefined)$/i.test(rawTitle) ? '' : rawTitle).replace(/["\n\r]/g, ' ').trim();
+      const titleLine = cleanTitleSrc ? `\\title "${cleanTitleSrc}"` : '';
+
+      const bpm = (overrideBpm != null)
+        ? (parseInt(overrideBpm,10) || CONFIG.DEFAULT_BPM)
+        : (parseInt(compTempo?.value,10) || STATE.currentBpm || CONFIG.DEFAULT_BPM);
+      const tempoLine = `\\tempo ${bpm} .`;
+
+      const keyRawIn = (compKey?.value ?? '').toString().trim();
+      let keyLine = '';
+      if (includeKey && keyRawIn) {
+        // Allow A..G with optional #/b only; dropdown already provides normalized options
+        const m = keyRawIn.match(/^([A-G](?:#|b)?)$/i);
+        if (m) keyLine = `\\key ${m[1]}`;
+      }
+
+      const body = (compBody?.value ?? '').toString().trim();
+      const header = [titleLine, tempoLine, keyLine].filter(s => !!s).join('\n');
+      const track  = `\\track \"Marimba\"\n\\instrument marimba`;
+      const content = body || `:4 C4 D4 E4 F4 | G4 A4 B4 C5 | C5 B4 A4 G4 | F4 E4 D4 C4`;
+      return `${header}\n${track}\n${content}`;
+    }
+
+    function renderFromUI(overrideBpm = null){
+      const tryRender = (useKey) => {
+        const tex = buildTexFromUI(overrideBpm, useKey);
+        STATE.currentBpm = parseInt(overrideBpm ?? (compTempo?.value || CONFIG.DEFAULT_BPM),10) || CONFIG.DEFAULT_BPM;
+        api.tex(tex);
+      };
+      try {
+        tryRender(true); // with key
+      } catch(e1){
+        console.warn('AlphaTex render failed with key; retrying without key...', e1);
+        try {
+          tryRender(false);
+          try { const st = document.getElementById('status'); if (st) st.textContent = 'Rendered without key (check key selection).'; } catch {}
+        } catch(e2){
+          console.warn('AlphaTex render failed completely', e2);
+          try { const st = document.getElementById('status'); if (st) st.textContent = 'AlphaTex error. Check Title/Tempo/Key/Body.'; } catch {}
+        }
+      }
+    }
 
     const api = STATE.api = new alphaTab.AlphaTabApi(container, {
       core: { tex: true },
@@ -292,7 +528,7 @@ if (btnNextNote) btnNextNote.onclick = () => {
         width: 0.8,     // 0.0 - 1.0
         level: 0.9      // 0.0 - 1.0 (amount of effect applied)
       }
-        
+
       }
     });
 
@@ -300,20 +536,29 @@ if (btnNextNote) btnNextNote.onclick = () => {
     // SoundFont preference
     const savedSf = localStorage.getItem('sfChoice') || 'local';
     if (sfSelect) sfSelect.value = savedSf;
+    let __appliedSfUrl = null;
     const applySoundFontChoice = (choice) => {
       const url = choice === 'cdn' ? CONFIG.SOUNDFONT_CDN : CONFIG.SOUNDFONT_URL;
+      // Early-exit guard to avoid repeated loads
+      if (__appliedSfUrl === url) { return; }
+      __appliedSfUrl = url;
       try {
         if (typeof api.loadSoundFontFromUrl === 'function') {
           api.loadSoundFontFromUrl(url);
         } else {
-          api.settings.player.soundFont = url;
-          api.updateSettings();
-          api.render();
+          const s = api.settings || (api.settings = {});
+          s.player = s.player || {};
+          s.player.soundFont = url;
+          api.updateSettings(s);
         }
       } catch (e) { console.warn('applySoundFontChoice failed:', e); }
     };
     applySoundFontChoice(savedSf);
-    const renderScoreWithBpm = (bpm) => { STATE.currentBpm = bpm; api.tex(TEX_TEMPLATE(STATE.currentBpm)); };
+    const renderScoreWithBpm = (bpm) => {
+      STATE.currentBpm = bpm;
+      if (compTempo) compTempo.value = String(bpm);
+      renderFromUI(bpm);
+    };
 
     /* =========================
        Helpers (colors, ticks, etc.)
@@ -364,6 +609,16 @@ if (btnNextNote) btnNextNote.onclick = () => {
     const setHighlightColor = (hex) => document.documentElement.style.setProperty('--hl-color', hex);
     const getStaticHlHex = () => hsvToHex(parseFloat(hlH.value)||0, parseFloat(hlS.value)||0, parseFloat(hlV.value)||0);
 
+    // Dynamically set cursor color to match current beat
+    function setCursorColorToBeat(beat) {
+      try {
+        if (!beat) return;
+        const curHex = beatTopColorHex(beat); // existing pitch→color logic
+        document.documentElement.style.setProperty('--cursor-color', curHex);
+        document.body.style.setProperty('--cursor-color', curHex);
+      } catch {}
+    }
+
     const getTickCache = () => api.tickCache ?? api.boundsLookup ?? null;
     function ticksPerMs(){
       const tc = getTickCache();
@@ -386,7 +641,7 @@ if (btnNextNote) btnNextNote.onclick = () => {
     };
 
 
-    
+
 
     /* =========================
        Theme / notational styles
@@ -456,7 +711,7 @@ if (btnNextNote) btnNextNote.onclick = () => {
         BS.StandardNotationLedgerLines
       ].filter(Boolean);
       const BEAT_KEYS_ACCENT = BEAT_KEYS_BASELINE.filter(k =>
-        k !== BS.StandardNotationBeams && k !== BS.GuitarTabBeams && k !== BS.StandardNotationGraceBeams && k !==  BS.StandardNotationStem, 
+        k !== BS.StandardNotationBeams && k !== BS.GuitarTabBeams && k !== BS.StandardNotationGraceBeams && k !==  BS.StandardNotationStem,
       );
       return { NOTE_KEYS_ALL, BEAT_KEYS_BASELINE, BEAT_KEYS_ACCENT };
     })();
@@ -676,8 +931,8 @@ if (btnNextNote) btnNextNote.onclick = () => {
         updateDebug(loopEnabled ? '(loop:on)' : '(loop:off)');
       });
     }
-    
-    
+
+
 
     // hook AlphaTab events to drive loop
     api.playerStateChanged.on(e => {
@@ -705,7 +960,7 @@ if (btnNextNote) btnNextNote.onclick = () => {
       setTimeout(()=>{ api.tickPosition = loopStartTick; api.play(); seeks++; updateDebug('(finished->restart)'); }, lateDelayMs);
     });
 
-    api.scoreLoaded.on(()=>{ setLoopFromActiveRange(); LOOP_SEEK_EARLY_TICKS = msToTicks(EARLY_MS); updateDebug(`(recalc early=${LOOP_SEEK_EARLY_TICKS}t ~${ticksToMs(LOOP_SEEK_EARLY_TICKS)}ms)`); 
+    api.scoreLoaded.on(()=>{ setLoopFromActiveRange(); LOOP_SEEK_EARLY_TICKS = msToTicks(EARLY_MS); updateDebug(`(recalc early=${LOOP_SEEK_EARLY_TICKS}t ~${ticksToMs(LOOP_SEEK_EARLY_TICKS)}ms)`);
 
 
     });
@@ -851,15 +1106,85 @@ if (btnNextNote) btnNextNote.onclick = () => {
     });
 
     // tempo
-    const debouncedRender = debounce((bpm) => renderScoreWithBpm(bpm), 150);
+    let tempoDrag = { active:false, wasPlaying:false, savedTick:0 };
+
     tempoVal.textContent = tempoSlider.value;
+
+    // Begin drag: capture state and pause if playing
+    const beginTempoDrag = () => {
+      if (tempoDrag.active) return;
+      tempoDrag.active = true;
+      tempoDrag.wasPlaying = (api?.player?.state === alphaTab.synth.PlayerState.Playing);
+      tempoDrag.savedTick = currentTick() ?? 0;
+      if (tempoDrag.wasPlaying) { try { api.pause(); } catch {} }
+    };
+
+    // Update during drag: only update UI fields; do NOT re-render score
     tempoSlider.addEventListener('input', () => {
       const bpm = parseInt(tempoSlider.value,10) || STATE.currentBpm;
       tempoVal.textContent = bpm;
-      api.playbackSpeed = 1.0;
-      debouncedRender(bpm);
+      if (compTempo) compTempo.value = String(bpm);
     });
-    tempoSlider.addEventListener('change', () => tempoSlider.dataset.touched = '1');
+
+    // Pointer/touch start hooks to mark drag start
+    tempoSlider.addEventListener('pointerdown', beginTempoDrag);
+    tempoSlider.addEventListener('mousedown', beginTempoDrag);
+    tempoSlider.addEventListener('touchstart', beginTempoDrag, { passive: true });
+
+    // On release: render with new tempo, restore tick, and resume if it was playing
+    tempoSlider.addEventListener('change', () => {
+      tempoSlider.dataset.touched = '1';
+      const bpm = parseInt(tempoSlider.value,10) || STATE.currentBpm;
+      if (compTempo) compTempo.value = String(bpm);
+
+      const { wasPlaying, savedTick } = tempoDrag;
+      const resume = () => {
+        try { api.scoreLoaded.off(resume); } catch {}
+        try { api.midiLoaded?.off?.(resume); } catch {}
+        try { api.tickPosition = savedTick; if (wasPlaying) api.play(); } catch {}
+        tempoDrag.active = false;
+      };
+      try { api.scoreLoaded.on(resume); } catch {}
+      try { api.midiLoaded.on(resume); } catch {}
+
+      renderScoreWithBpm(bpm);
+    });
+
+    // Composer persistence & wiring
+    const LS_KEYS = { t:'comp.title', k:'comp.key', b:'comp.body', a:'comp.auto', m:'comp.tempo' };
+    function loadComposer(){
+      try {
+        const t = localStorage.getItem(LS_KEYS.t) || '';
+        const k = localStorage.getItem(LS_KEYS.k) || '';
+        const b = localStorage.getItem(LS_KEYS.b) || '';
+        const a = localStorage.getItem(LS_KEYS.a) === '1';
+        const m = parseInt(localStorage.getItem(LS_KEYS.m) || `${CONFIG.DEFAULT_BPM}`, 10) || CONFIG.DEFAULT_BPM;
+        if (compTitle) compTitle.value = t;
+        if (compKey)   compKey.value   = k;
+        if (compBody)  compBody.value  = b;
+        if (compAuto)  compAuto.checked = a;
+        if (compTempo) compTempo.value = String(m);
+      } catch {}
+    }
+    function saveComposer(){
+      try {
+        if (compTitle) localStorage.setItem(LS_KEYS.t, compTitle.value||'');
+        if (compKey)   localStorage.setItem(LS_KEYS.k, compKey.value||'');
+        if (compBody)  localStorage.setItem(LS_KEYS.b, compBody.value||'');
+        if (compAuto)  localStorage.setItem(LS_KEYS.a, compAuto.checked ? '1':'0');
+        if (compTempo) localStorage.setItem(LS_KEYS.m, String(parseInt(compTempo.value||`${CONFIG.DEFAULT_BPM}`,10)||CONFIG.DEFAULT_BPM));
+      } catch {}
+    }
+    loadComposer();
+
+    if (compApply) compApply.addEventListener('click', ()=>{ saveComposer(); renderFromUI(); });
+    if (compAuto)  compAuto.addEventListener('change', saveComposer);
+    ['input','change'].forEach(evt=>{
+      if (compTitle) compTitle.addEventListener(evt, ()=>{ if (compAuto?.checked) renderFromUI(); saveComposer(); });
+      if (compKey)   compKey.addEventListener(evt,   ()=>{ if (compAuto?.checked) renderFromUI(); saveComposer(); });
+      if (compBody)  compBody.addEventListener(evt,  ()=>{ if (compAuto?.checked) renderFromUI(); saveComposer(); });
+      if (compTempo) compTempo.addEventListener(evt, ()=>{ const v=parseInt(compTempo.value||`${CONFIG.DEFAULT_BPM}`,10)||CONFIG.DEFAULT_BPM; tempoSlider.value=String(v); tempoVal.textContent=String(v); if (compAuto?.checked) renderFromUI(v); saveComposer(); });
+    });
 
     // opacity
     opacityVal.textContent = parseFloat(opacitySlider.value).toFixed(2);
@@ -900,20 +1225,20 @@ if (btnNextNote) btnNextNote.onclick = () => {
     refreshStaticHlUI();
     [hlH,hlS,hlV].forEach(sl => sl.addEventListener('input', refreshStaticHlUI));
 
-    hlAssist.addEventListener('change', () => {
-      setBuiltinHighlighting(hlAssist.checked);
-      setHighlightColor(getStaticHlHex());
-    });
+      hlAssist.addEventListener('change', () => {
+          setBuiltinHighlighting(false); // avoid built-in flashing highlight (prevents flicker)
+          setHighlightColor(getStaticHlHex());
+      });
 
     // transport
-    btnPlay.onclick = () => { 
-      api.playPause(); 
+    btnPlay.onclick = () => {
+      api.playPause();
       clearHighlightedNote();
     };
     btnStop.onclick = () => api.stop();
 
-    
-    
+
+
 
     // transpose UI
     reflectTransposeUI(STATE.transposeSemis);
@@ -955,9 +1280,8 @@ if (btnNextNote) btnNextNote.onclick = () => {
       status.textContent = 'Ready';
       btnStop.disabled = false;
       btnPlay.disabled = false;
-      applyLoopUI(loadLoopPref());
-      // Re-apply SF and metronome to be safe after player ready
-      if (sfSelect) applySoundFontChoice(sfSelect.value || 'local');
+      try { applyLoopUI(loadLoopPref()); } catch(_) {}
+      // Re-apply metronome to be safe after player ready
       try { api.metronomeVolume = parseFloat(localStorage.getItem('metroVol') || '0') || 0; } catch {}
     });
 
@@ -1003,6 +1327,7 @@ if (btnNextNote) btnNextNote.onclick = () => {
       if (STATE.lastBeatAccented === scoreBeat) return;
       if (STATE.lastBeatAccented) recolorBeat(STATE.lastBeatAccented);
       accentBeat(scoreBeat);
+      setCursorColorToBeat(scoreBeat);
       STATE.lastBeatAccented = scoreBeat;
       try { api.render(); } catch {}
     });
@@ -1070,7 +1395,7 @@ function highlightNoteAt(idx) {
   try { api.render(); } catch {}
 }
 
- 
+
     // MIDI-driven highlight color when assist is ON
     try {
       if (api.midiEventsPlayed && 'midiEventsPlayedFilter' in api && alphaTab?.midi?.MidiEventType) {
@@ -1086,7 +1411,10 @@ function highlightNoteAt(idx) {
             if (typeof n !== 'number') continue;
             if (best == null || n > best) best = n;
           }
-          if (best != null) setHighlightColor(pcColor(best));
+          if (best != null) {
+            const semi = (typeof STATE?.transposeSemis === 'number') ? STATE.transposeSemis : 0;
+            setHighlightColor(pcColor(best + semi));
+          }
         });
       }
     } catch {}
@@ -1109,6 +1437,77 @@ function highlightNoteAt(idx) {
       api.render();
     };
 
+    // ---- Notation wrapper height: drag-to-resize + persistence
+    const LS_NOTATION_HEIGHT = 'notationWrap.heightPx';
+    (function initNotationHeight(){
+      try {
+        const saved = parseInt(localStorage.getItem(LS_NOTATION_HEIGHT), 10);
+        if (!isNaN(saved) && saved >= 200) notationWrap.style.height = saved + 'px';
+      } catch {}
+    })();
+    if (notationResizer && notationWrap){
+      let startY = 0, startH = 0, dragging = false;
+      const onMove = (e) => {
+        if (!dragging) return;
+        const dy = (e.clientY || 0) - startY;
+        const minH = 200;
+        const maxH = Math.round(window.innerHeight * 0.95);
+        let h = Math.min(maxH, Math.max(minH, startH + dy));
+        notationWrap.style.height = h + 'px';
+        try { localStorage.setItem(LS_NOTATION_HEIGHT, String(h)); } catch {}
+      };
+      const onUp = () => {
+        if (!dragging) return;
+        dragging = false;
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        document.body.style.userSelect = '';
+      };
+      notationResizer.addEventListener('mousedown', (e) => {
+        dragging = true;
+        startY = e.clientY || 0;
+        startH = notationWrap.getBoundingClientRect().height;
+        document.body.style.userSelect = 'none';
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+        e.preventDefault();
+      });
+    }
+
+    // ---- Layout mode selector (Vertical/Page vs Horizontal)
+    function applyLayoutMode(mode){
+      try {
+        const s = api.settings || {};
+        s.display = s.display || {};
+        const LM = alphaTab?.LayoutMode;
+        s.display.layoutMode = (mode === 'horizontal') ? (LM ? LM.Horizontal : 1) : (LM ? LM.Page : 0);
+        api.updateSettings(s);
+        api.render();
+      } catch (e) { console.warn('applyLayoutMode failed', e); }
+    }
+    (function initLayoutMode(){
+      const saved = localStorage.getItem('layoutMode') || 'page';
+      if (layoutModeSelect) layoutModeSelect.value = saved;
+      applyLayoutMode(saved);
+    })();
+    if (layoutModeSelect){
+      layoutModeSelect.addEventListener('change', () => {
+        const v = layoutModeSelect.value;
+        try { localStorage.setItem('layoutMode', v); } catch {}
+        applyLayoutMode(v);
+      });
+    }
+
+    // Use the wrapper as the scroll container so the notation area scrolls
+    try {
+      if (notationWrap) {
+        const s = api.settings || (api.settings = {});
+        s.player = s.player || {};
+        s.player.scrollElement = notationWrap;
+        api.updateSettings(s);
+      }
+    } catch {}
+
     // First render after fonts are ready
     Promise.all([
       document.fonts.load("16px 'MuseJazzText'"),
@@ -1119,4 +1518,3 @@ function highlightNoteAt(idx) {
     });
   })();
   </script>
-</body>
