@@ -2,91 +2,196 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Mobile: fit small screens & scale correctly -->
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Kona, Hawaii — Tropical Itinerary (Sept 30 – Oct 6, 2025)</title>
+
+<!-- Web fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+
 <style>
+/* ========= CSS VARIABLES ========= */
 :root{
   --bg:#f7fdfb;
-  --ink:#12302a;
-  --muted:#4d6b63;
+  --ink:#102e28;
+  --muted:#46665e;
   --brand:#00b894;
   --rose:#ef476f;
   --card:#ffffff;
+  --ring:#bfeee2;
+  --chip:#eaf8f4;
+  --chip-border:#d3f0e7;
   --shadow: 0 10px 30px rgba(0,0,0,.08);
-}
-*{box-sizing:border-box}
-html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:Poppins,system-ui,Arial,sans-serif;line-height:1.55}
 
-/* Hero header */
+  /* Fluid type scale */
+  --h1: clamp(2rem, 6vw, 4.2rem);
+  --h2: clamp(1.4rem, 3.5vw, 2rem);
+  --h3: clamp(1.1rem, 2.5vw, 1.35rem);
+  --body: clamp(0.98rem, 1.8vw, 1.05rem);
+  --small: clamp(0.9rem, 1.6vw, 0.98rem);
+
+  /* Layout spacing */
+  --pad: clamp(0.8rem, 2.5vw, 1.2rem);
+  --gap: clamp(0.6rem, 2vw, 1rem);
+}
+
+/* Respect dark mode if user prefers */
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0b1715;
+    --ink:#e9f7f2;
+    --muted:#a9c0ba;
+    --card:#0f201d;
+    --chip:#153a33;
+    --chip-border:#29584f;
+    --ring:#1f6f5f;
+    --shadow: 0 10px 30px rgba(0,0,0,.35);
+  }
+}
+
+/* ========= BASE ========= */
+*{box-sizing:border-box}
+html,body{
+  margin:0; padding:0;
+  background:var(--bg); color:var(--ink);
+  font-family:Poppins,system-ui,Arial,sans-serif;
+  line-height:1.55; font-size: var(--body);
+  -webkit-text-size-adjust:100%;
+}
+img{max-width:100%; height:auto; display:block}
+
+/* ========= HERO ========= */
 .header{
-  position:relative;min-height:70vh;display:grid;place-items:center;text-align:center;color:white;overflow:hidden;
+  position:relative; min-height:60vh; display:grid; place-items:center;
+  text-align:center; color:#fff; overflow:hidden;
 }
 .header::before{
-  content:"";position:absolute;inset:0;
-  background:linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.25)), url('https://images.unsplash.com/photo-1537996194471-e657df975ab4?q=80&w=1974&auto=format&fit=crop') center/cover no-repeat;
+  content:""; position:absolute; inset:0;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.25)),
+    url('https://images.unsplash.com/photo-1537996194471-e657df975ab4?q=80&w=1600&auto=format&fit=crop') center/cover no-repeat;
   filter:saturate(1.1);
 }
-.header .title{position:relative;z-index:1;padding:2rem;max-width:900px}
-.kicker{letter-spacing:.2em;text-transform:uppercase;font-weight:600;opacity:.9}
-.h1{font-family:'Playfair Display',serif;font-size: clamp(2.2rem,5vw,4.2rem);margin:.3rem 0 1rem}
-.sub{font-size:1.1rem;opacity:.95}
-.cta-bar{margin-top:1.2rem;display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap}
-.btn{background:var(--brand);color:#fff;padding:.75rem 1rem;border-radius:100px;text-decoration:none;font-weight:700;box-shadow:var(--shadow)}
-.btn.alt{background:var(--rose)}
-.btn.ghost{background:rgba(255,255,255,.12);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.35)}
-.badge{display:inline-block;background:rgba(255,255,255,.2);padding:.35rem .7rem;border-radius:999px;margin-top:.6rem}
+.header .title{position:relative; z-index:1; padding: max(2rem, 4vh); max-width: 60rem;}
+.kicker{letter-spacing:.18em; text-transform:uppercase; font-weight:600; opacity:.95}
+.h1{font-family:'Playfair Display',serif; font-size:var(--h1); margin:.25rem 0 1rem}
+.sub{font-size:var(--small); opacity:.98}
+.cta-bar{margin-top:1rem; display:flex; gap:.6rem; justify-content:center; flex-wrap:wrap}
+.btn{
+  background:var(--brand); color:#fff; padding:.75rem 1rem;
+  border-radius:999px; text-decoration:none; font-weight:800; box-shadow:var(--shadow);
+  border:0; display:inline-flex; align-items:center; justify-content:center;
+  min-height:44px; /* touch target */
+}
+.btn.ghost{background:rgba(255,255,255,.12); backdrop-filter:blur(6px); border:1px solid rgba(255,255,255,.35)}
+.badge{display:inline-block; background:rgba(255,255,255,.2); padding:.35rem .7rem; border-radius:999px; margin-top:.6rem}
 
-/* Nav */
-.nav{position:sticky;top:0;background:rgba(255,255,255,.85);backdrop-filter:blur(8px);border-bottom:1px solid #e7f3ef;z-index:5}
-.nav .container{display:flex;gap:.8rem;align-items:center;justify-content:space-between;padding:.6rem 1rem}
-.chips{display:flex;gap:.5rem;flex-wrap:wrap}
-.chip{background:#eaf8f4;color:#0f3b31;border:1px solid #d3f0e7;padding:.4rem .75rem;border-radius:999px;text-decoration:none;font-size:.95rem}
-.print-note{font-size:.9rem;color:#2f4f46}
+/* ========= NAV ========= */
+.nav{
+  position:sticky; top:0; z-index:5;
+  background:rgba(255,255,255,.85); backdrop-filter:blur(8px);
+  border-bottom:1px solid #e7f3ef;
+}
+@media (prefers-color-scheme: dark){
+  .nav{ background:rgba(16,32,29,.78); border-bottom-color:#10322c; }
+}
+.nav .container{
+  display:flex; gap:.8rem; align-items:center; justify-content:space-between;
+  padding:.6rem var(--pad);
+}
+.chips{
+  display:flex; gap:.5rem; align-items:center;
+  overflow-x:auto; -webkit-overflow-scrolling: touch; scrollbar-width:none;
+  padding-bottom:.2rem; mask-image: linear-gradient(90deg, transparent 0, #000 1rem, #000 calc(100% - 1rem), transparent 100%);
+}
+.chips::-webkit-scrollbar{display:none}
+.chip{
+  background:var(--chip); color:#0f3b31; border:1px solid var(--chip-border);
+  padding:.5rem .8rem; border-radius:999px; text-decoration:none; font-size:.95rem;
+  white-space:nowrap;
+}
+.print-note{font-size:var(--small); color:var(--muted); display:none}
+@media (min-width: 768px){ .print-note{ display:block } }
 
-/* Layout */
-.container{max-width:1100px;margin:auto;padding:2rem 1.2rem}
-.grid{display:grid;grid-template-columns:300px 1fr;gap:1.2rem}
-@media (max-width: 900px){.grid{grid-template-columns:1fr}}
+/* ========= LAYOUT ========= */
+.container{max-width:1100px; margin:auto; padding:2rem 1rem}
+.grid{display:grid; grid-template-columns:1fr; gap:var(--gap)}
+@media (min-width: 980px){
+  .grid{ grid-template-columns: 300px 1fr }
+}
 
-/* Sidebar */
-.sidebar{position:sticky;top:72px;align-self:start;background:var(--card);border:1px solid #eaf2ef;border-radius:16px;padding:1rem;box-shadow:var(--shadow)}
-.sidebar h3{margin-top:0;font-size:1.05rem;color:var(--muted)}
-.sidebar a{display:flex;gap:.6rem;align-items:center;text-decoration:none;color:var(--ink);padding:.5rem .6rem;border-radius:10px}
-.sidebar a:hover{background:#f0fbf8}
+/* ========= SIDEBAR ========= */
+.sidebar{
+  position:sticky; top:72px; align-self:start; background:var(--card);
+  border:1px solid #eaf2ef; border-radius:16px; padding:var(--pad); box-shadow:var(--shadow)
+}
+.sidebar h3{margin:.2rem 0 0.6rem; font-size:var(--h3); color:var(--muted)}
+.sidebar a{
+  display:flex; gap:.6rem; align-items:center; text-decoration:none; color:var(--ink);
+  padding:.55rem .6rem; border-radius:10px; min-height:40px;
+}
+.sidebar a:hover{ background:#f0fbf8 }
+@media (max-width: 979px){ .sidebar{ display:none } }
 
-/* Cards */
-.card{background:var(--card);border:1px solid #eaf2ef;border-radius:18px;overflow:hidden;box-shadow:var(--shadow);margin-bottom:1.5rem}
-.card .banner{height:180px;background-size:cover;background-position:center}
-.card .body{padding:1rem 1.2rem}
-.day-title{font-size:1.3rem;font-weight:800;margin:.2rem 0 1rem;color:#0b3b33}
-.item{display:grid;grid-template-columns:110px 1fr;gap:.8rem;padding:.8rem;border-radius:12px}
-.item:not(:last-child){border-bottom:1px dashed #e8f1ee}
-.time{font-weight:800;color:var(--brand)}
-.what{font-weight:600}
-.meta{font-size:.95rem;color:var(--muted)}
-.btn-row{margin-top:.4rem;display:flex;gap:.5rem;flex-wrap:wrap}
-.small-btn{font-size:.85rem;padding:.35rem .6rem;border-radius:999px;text-decoration:none;border:1px solid #d7efe9;background:#ecfbf7;color:#0f3b31}
+/* ========= CARDS / DAYS ========= */
+.card{
+  background:var(--card); border:1px solid #eaf2ef; border-radius:18px; overflow:hidden; box-shadow:var(--shadow);
+  margin-bottom:1rem;
+}
+.card .banner{
+  height: clamp(140px, 24vw, 200px);
+  background-size:cover; background-position:center;
+  aspect-ratio: 16/9;
+}
+.card .body{ padding:var(--pad) }
+.day-title{
+  font-size:var(--h3); font-weight:900; margin:.2rem 0 1rem; color:#0b3b33;
+}
+.item{
+  display:grid; grid-template-columns:110px 1fr; gap:.8rem; padding:.8rem; border-radius:12px;
+}
+.item:not(:last-child){ border-bottom:1px dashed #e8f1ee }
+.time{ font-weight:900; color:var(--brand) }
+.what{ font-weight:700 }
+.meta{ font-size:var(--small); color:var(--muted); margin-top:.15rem }
+.btn-row{ margin-top:.45rem; display:flex; gap:.5rem; flex-wrap:wrap }
+.small-btn{
+  font-size:.9rem; padding:.45rem .7rem; border-radius:999px; text-decoration:none;
+  border:1px solid var(--chip-border); background:#ecfbf7; color:#0f3b31; min-height:36px; display:inline-flex; align-items:center;
+}
 
-/* Budget */
-.section-title{font-size:1.6rem;font-weight:900;margin:1.6rem 0 .6rem;color:#0b3b33}
-.budget{border-collapse:collapse;width:100%;overflow:hidden;border-radius:14px;border:1px solid #eaf2ef;box-shadow:var(--shadow)}
-.budget th, .budget td{padding:12px 14px;text-align:left;vertical-align:top}
-.budget thead th{background:#eaf8f4;font-weight:900;color:#0b3b33}
-.budget tbody tr:nth-child(odd){background:#fcfffe}
+/* Stack time/description on small screens for readability */
+@media (max-width: 560px){
+  .item{ grid-template-columns: 1fr }
+  .time{ order: -1; margin-bottom:.15rem }
+}
 
-.tip{background:#fff7e6;border:1px solid #ffe4a3;border-radius:14px;padding:1rem;box-shadow:var(--shadow);margin-top:1rem}
+/* ========= SECTION TITLES & TABLE ========= */
+.section-title{ font-size:var(--h2); font-weight:900; margin:1.2rem 0 .6rem; color:#0b3b33 }
+.budget{
+  border-collapse:collapse; width:100%; overflow:hidden; border-radius:14px; border:1px solid #eaf2ef; box-shadow:var(--shadow)
+}
+.budget th, .budget td{ padding:12px 14px; text-align:left; vertical-align:top; font-size:var(--body) }
+.budget thead th{ background:#eaf8f4; font-weight:900; color:#0b3b33 }
+.budget tbody tr:nth-child(odd){ background:#fcfffe }
 
-.footer{text-align:center;color:var(--muted);padding:2rem 1rem}
+/* ========= UTIL ========= */
+.tip{ background:#fff7e6; border:1px solid #ffe4a3; border-radius:14px; padding:1rem; box-shadow:var(--shadow); margin-top:1rem }
+.footer{ text-align:center; color:var(--muted); padding:2rem 1rem; font-size:var(--small) }
 
-/* Print styles */
+/* ========= REDUCED MOTION ========= */
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important; scroll-behavior:auto !important; }
+}
+
+/* ========= PRINT ========= */
 @media print{
   .nav, .sidebar, .cta-bar, .badge, .print-note, .footer { display:none !important; }
-  .header { min-height: 40vh }
-  .grid { grid-template-columns: 1fr }
+  .header { min-height: 30vh }
+  .grid { grid-template-columns: 1fr !important }
   .card .banner { height: 120px }
-  a::after{content:" (" attr(href) ")"; font-size: .8rem; color:#666}
-  body{ background: #fff }
+  a::after{ content:" (" attr(href) ")"; font-size:.8rem; color:#666 }
+  body{ background:#fff }
 }
 </style>
 </head>
@@ -95,19 +200,19 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:P
 <header class="header">
   <div class="title">
     <div class="kicker">KONA • HAWAI‘I</div>
-    <h1 class="h1">Tropical Itinerary<br><span style="font-size:.6em;opacity:.9">September 30 – October 6, 2025</span></h1>
+    <h1 class="h1" style="font-size:var(--h1)">Tropical Itinerary<br><span style="font-size:.6em;opacity:.9">September 30 – October 6, 2025</span></h1>
     <p class="sub">A 7-day island escape: beaches, volcanoes, waterfalls, manta rays, coffee farms, and Hawaiian culture.</p>
     <div class="cta-bar">
-      <a class="btn print" onclick="window.print()">🖨️ Print / Save PDF</a>
+      <a class="btn" onclick="window.print()">🖨️ Print / Save PDF</a>
       <a class="btn ghost" href="#budget">💵 Budget at a Glance</a>
-      <span class="badge">Tip: This page is designed to export beautifully to PDF.</span>
+      <span class="badge">Tip: Exports beautifully to PDF; links stay clickable.</span>
     </div>
   </div>
 </header>
 
 <nav class="nav">
   <div class="container">
-    <div class="chips">
+    <div class="chips" role="navigation" aria-label="Day navigation">
       <a class="chip" href="#day1">Day 1</a>
       <a class="chip" href="#day2">Day 2</a>
       <a class="chip" href="#day3">Day 3</a>
@@ -117,7 +222,7 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:P
       <a class="chip" href="#day7">Day 7</a>
       <a class="chip" href="#budget">Budget</a>
     </div>
-    <div class="print-note">Use the button to save as PDF. Links remain clickable in the PDF.</div>
+    <div class="print-note">Use the button above to save as PDF.</div>
   </div>
 </nav>
 
@@ -137,9 +242,9 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:P
   </aside>
 
   <main>
-    <!-- DAY 1 -->
+    <!-- ===== DAY 1 ===== -->
     <section class="card" id="day1">
-      <div class="banner" style="background-image:url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1974&auto=format&fit=crop')"></div>
+      <div class="banner" style="background-image:url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1600&auto=format&fit=crop')"></div>
       <div class="body">
         <div class="day-title">📅 Day 1 – Sept 30 (Arrival)</div>
 
@@ -191,9 +296,9 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:P
       </div>
     </section>
 
-    <!-- DAY 2 -->
+    <!-- ===== DAY 2 ===== -->
     <section class="card" id="day2">
-      <div class="banner" style="background-image:url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2070&auto=format&fit=crop')"></div>
+      <div class="banner" style="background-image:url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1600&auto=format&fit=crop')"></div>
       <div class="body">
         <div class="day-title">📅 Day 2 – Oct 1 (Beaches & Luau)</div>
 
@@ -212,8 +317,8 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:P
         <div class="item">
           <div class="time">8:00 AM – 12:00 PM</div>
           <div>
-            <div class="what">Beach time at Kua Bay (Maniniʻowali Beach)</div>
-            <div class="meta">📍 72-2225 Queen Ka’ahumanu Hwy, Kailua-Kona, HI • 💵 Free • 👕 Swimsuit, reef-safe sunscreen</div>
+            <div class="what">Kua Bay (Maniniʻowali) beach time</div>
+            <div class="meta">📍 72-2225 Queen Ka’ahumanu Hwy, Kailua-Kona • 💵 Free • 👕 Reef-safe sunscreen</div>
             <div class="btn-row">
               <a class="small-btn" target="_blank" href="https://www.google.com/maps?q=Manini%CA%BBowali+Beach+(Kua+Bay)">📍 Open in Maps</a>
             </div>
@@ -252,9 +357,9 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:P
       </div>
     </section>
 
-    <!-- DAY 3 -->
+    <!-- ===== DAY 3 ===== -->
     <section class="card" id="day3">
-      <div class="banner" style="background-image:url('https://images.unsplash.com/photo-1516557070061-c3d1653fa646?q=80&w=1974&auto=format&fit=crop')"></div>
+      <div class="banner" style="background-image:url('https://images.unsplash.com/photo-1516557070061-c3d1653fa646?q=80&w=1600&auto=format&fit=crop')"></div>
       <div class="body">
         <div class="day-title">📅 Day 3 – Oct 2 (Volcano Adventure)</div>
 
@@ -281,7 +386,7 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:P
         <div class="item">
           <div class="time">10:00 AM – 2:30 PM</div>
           <div>
-            <div class="what">Explore: Kīlauea overlooks, Crater Rim Drive, Thurston Lava Tube, steam vents</div>
+            <div class="what">Kīlauea overlooks, Crater Rim Drive, Thurston Lava Tube, steam vents</div>
             <div class="meta">📍 Hawaiʻi Volcanoes NP</div>
             <div class="btn-row">
               <a class="small-btn" target="_blank" href="https://www.nps.gov/havo/planyourvisit/index.htm">🗺️ Plan your visit</a>
@@ -309,9 +414,9 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:P
       </div>
     </section>
 
-    <!-- DAY 4 -->
+    <!-- ===== DAY 4 ===== -->
     <section class="card" id="day4">
-      <div class="banner" style="background-image:url('https://images.unsplash.com/photo-1544551763-7ef4200a3229?q=80&w=1974&auto=format&fit=crop')"></div>
+      <div class="banner" style="background-image:url('https://images.unsplash.com/photo-1544551763-7ef4200a3229?q=80&w=1600&auto=format&fit=crop')"></div>
       <div class="body">
         <div class="day-title">📅 Day 4 – Oct 3 (Snorkeling & South Kona)</div>
 
@@ -319,10 +424,10 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:P
           <div class="time">8:00 AM – 12:00 PM</div>
           <div>
             <div class="what">Kealakekua Bay Snorkel Tour (departs Keauhou Bay)</div>
-            <div class="meta">📍 78-7130 Kaleiopapa St, Kailua-Kona, HI • 💵 $110–150 • 👕 Swimsuit, towel</div>
+            <div class="meta">📍 78-7130 Kaleiopapa St, Kailua-Kona • 💵 $110–150 • 👕 Swimsuit, towel</div>
             <div class="btn-row">
               <a class="small-btn" target="_blank" href="https://www.google.com/maps?q=78-7130+Kaleiopapa+St,+Kailua-Kona,+HI">📍 Open in Maps</a>
-              <a class="small-btn" target="_blank" href="https://www.hawaiistateparks.org/parks/kealakekua-bay-state-historical-park">ℹ️ Kealakekua Bay (State Park)</a>
+              <a class="small-btn" target="_blank" href="https://www.hawaiistateparks.org/parks/kealakekua-bay-state-historical-park">ℹ️ Kealakekua Bay</a>
             </div>
           </div>
         </div>
@@ -331,7 +436,7 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:P
           <div class="time">12:30 PM</div>
           <div>
             <div class="what">Lunch in Captain Cook</div>
-            <div class="meta">📍 Captain Cook, HI • 💵 $15–25</div>
+            <div class="meta">📍 Captain Cook • 💵 $15–25</div>
             <div class="btn-row"><a class="small-btn" target="_blank" href="https://www.google.com/maps/search/Captain+Cook+restaurants">🔎 Nearby restaurants</a></div>
           </div>
         </div>
@@ -340,7 +445,7 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:P
           <div class="time">2:00 – 4:00 PM</div>
           <div>
             <div class="what">“Two Step” (Hōnaunau Bay) shore snorkeling</div>
-            <div class="meta">📍 82-6009 Puuhonua Rd, Captain Cook, HI • 💵 Free • 👕 Snorkel gear</div>
+            <div class="meta">📍 82-6009 Puuhonua Rd, Captain Cook • 💵 Free • 👕 Snorkel gear</div>
             <div class="btn-row"><a class="small-btn" target="_blank" href="https://www.google.com/maps?q=82-6009+Puuhonua+Rd,+Captain+Cook,+HI">📍 Open in Maps</a></div>
           </div>
         </div>
@@ -356,9 +461,9 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:P
       </div>
     </section>
 
-    <!-- DAY 5 -->
+    <!-- ===== DAY 5 ===== -->
     <section class="card" id="day5">
-      <div class="banner" style="background-image:url('https://images.unsplash.com/photo-1502082553048-f009c37129b9?q=80&w=1974&auto=format&fit=crop')"></div>
+      <div class="banner" style="background-image:url('https://images.unsplash.com/photo-1502082553048-f009c37129b9?q=80&w=1600&auto=format&fit=crop')"></div>
       <div class="body">
         <div class="day-title">📅 Day 5 – Oct 4 (Coffee & Waterfalls)</div>
 
@@ -366,7 +471,7 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:P
           <div class="time">8:00 AM</div>
           <div>
             <div class="what">Greenwell Farms Coffee Tour</div>
-            <div class="meta">📍 81-6581 Mamalahoa Hwy, Kealakekua, HI • 💵 Free • 👕 Comfortable casual</div>
+            <div class="meta">📍 81-6581 Mamalahoa Hwy, Kealakekua • 💵 Free • 👕 Comfortable casual</div>
             <div class="btn-row">
               <a class="small-btn" target="_blank" href="https://www.google.com/maps?q=81-6581+Mamalahoa+Hwy,+Kealakekua,+HI">📍 Open in Maps</a>
               <a class="small-btn" target="_blank" href="https://www.greenwellfarms.com/">☕ Official site</a>
@@ -388,7 +493,7 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:P
           <div class="time">12:00 PM</div>
           <div>
             <div class="what">Rainbow Falls (Wailuku River State Park)</div>
-            <div class="meta">📍 2 Rainbow Dr, Hilo, HI • 💵 Free • 👕 Comfortable shoes</div>
+            <div class="meta">📍 2 Rainbow Dr, Hilo • 💵 Free • 👕 Comfortable shoes</div>
             <div class="btn-row">
               <a class="small-btn" target="_blank" href="https://www.google.com/maps?q=2+Rainbow+Dr,+Hilo,+HI">📍 Open in Maps</a>
               <a class="small-btn" target="_blank" href="https://dlnr.hawaii.gov/dsp/parks/hawaii/wailuku-river-state-park/">🌈 Official park page</a>
@@ -400,7 +505,7 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:P
           <div class="time">1:00 PM</div>
           <div>
             <div class="what">Picnic or café in Hilo</div>
-            <div class="meta">📍 Hilo, HI • 💵 $10–20</div>
+            <div class="meta">📍 Hilo • 💵 $10–20</div>
             <div class="btn-row"><a class="small-btn" target="_blank" href="https://www.google.com/maps/search/Hilo+cafes">🔎 Find cafes</a></div>
           </div>
         </div>
@@ -409,7 +514,7 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:P
           <div class="time">2:00 PM</div>
           <div>
             <div class="what">ʻAkaka Falls State Park</div>
-            <div class="meta">📍 Akaka Falls Rd, Honomu, HI 96728 • 💵 Non-resident fees apply • 👕 Walking shoes, bug spray</div>
+            <div class="meta">📍 Akaka Falls Rd, Honomu 96728 • 💵 Non-resident fees • 👕 Walking shoes, bug spray</div>
             <div class="btn-row">
               <a class="small-btn" target="_blank" href="https://www.google.com/maps?q=%CA%BBAkaka+Falls+State+Park">📍 Open in Maps</a>
               <a class="small-btn" target="_blank" href="https://dlnr.hawaii.gov/dsp/parks/hawaii/akaka-falls-state-park/">🌿 Official park page</a>
@@ -427,9 +532,9 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:P
       </div>
     </section>
 
-    <!-- DAY 6 -->
+    <!-- ===== DAY 6 ===== -->
     <section class="card" id="day6">
-      <div class="banner" style="background-image:url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1974&auto=format&fit=crop')"></div>
+      <div class="banner" style="background-image:url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1600&auto=format&fit=crop')"></div>
       <div class="body">
         <div class="day-title">📅 Day 6 – Oct 5 (Adventure & Stargazing)</div>
 
@@ -437,7 +542,7 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:P
           <div class="time">8:00 AM – 1:00 PM</div>
           <div>
             <div class="what">Hāpuna Beach State Recreation Area</div>
-            <div class="meta">📍 Old Puako Rd, Waimea, HI 96743 • 💵 Parking/entry fees may apply • 👕 Swimsuit</div>
+            <div class="meta">📍 Old Puako Rd, Waimea 96743 • 💵 Parking/entry may apply • 👕 Swimsuit</div>
             <div class="btn-row">
               <a class="small-btn" target="_blank" href="https://www.google.com/maps?q=Hapuna+Beach+State+Recreation+Area">📍 Open in Maps</a>
               <a class="small-btn" target="_blank" href="https://dlnr.hawaii.gov/dsp/parks/hawaii/hapuna-beach-state-recreation-area/">🏖️ Official park page</a>
@@ -458,10 +563,10 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:P
           <div class="time">3:00 PM</div>
           <div>
             <div class="what">Puʻukoholā Heiau National Historic Site</div>
-            <div class="meta">📍 62-3601 Kawaihae Rd, Waimea, HI • 💵 Free • 👕 Casual</div>
+            <div class="meta">📍 62-3601 Kawaihae Rd, Waimea • 💵 Free • 👕 Casual</div>
             <div class="btn-row">
               <a class="small-btn" target="_blank" href="https://www.google.com/maps?q=Pu%CA%BBukohol%C4%81+Heiau+National+Historic+Site">📍 Open in Maps</a>
-              <a class="small-btn" target="_blank" href="https://www.nps.gov/puhe/">🏛️ Official NPS page</a>
+              <a class="small-btn" target="_blank" href="https://www.nps.gov/puhe/">🏛️ NPS page</a>
             </div>
           </div>
         </div>
@@ -469,7 +574,7 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:P
         <div class="item">
           <div class="time">6:30 – 9:30 PM</div>
           <div>
-            <div class="what">Choose your adventure: Manta Ray Night Snorkel or Mauna Kea Stargazing Tour</div>
+            <div class="what">Manta Ray Night Snorkel or Mauna Kea Stargazing Tour</div>
             <div class="meta">📍 Honokōhau Harbor: 74-380 Kealakehe Pkwy, Kailua-Kona • 💵 ~$140+ • 👕 Swimsuit or warm layers</div>
             <div class="btn-row">
               <a class="small-btn" target="_blank" href="https://www.google.com/maps?q=74-380+Kealakehe+Pkwy,+Kailua-Kona,+HI">📍 Harbor in Maps</a>
@@ -480,9 +585,9 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:P
       </div>
     </section>
 
-    <!-- DAY 7 -->
+    <!-- ===== DAY 7 ===== -->
     <section class="card" id="day7">
-      <div class="banner" style="background-image:url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2070&auto=format&fit=crop')"></div>
+      <div class="banner" style="background-image:url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1600&auto=format&fit=crop')"></div>
       <div class="body">
         <div class="day-title">📅 Day 7 – Oct 6 (Departure)</div>
 
@@ -531,7 +636,7 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:P
       </div>
     </section>
 
-    <!-- BUDGET -->
+    <!-- ===== BUDGET ===== -->
     <section class="card" id="budget">
       <div class="body">
         <div class="day-title section-title">💵 Budget at a Glance (per person)</div>
@@ -547,7 +652,7 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:P
         </table>
 
         <div class="tip">
-          <strong>Tip:</strong> Some sites require fees or have notices (renovations, hours, parking). Check official pages:
+          <strong>Tip:</strong> Some sites change hours/fees seasonally. Check official pages:
           <a target="_blank" href="https://www.nps.gov/havo/">Hawaiʻi Volcanoes NP</a>,
           <a target="_blank" href="https://dlnr.hawaii.gov/dsp/parks/hawaii/akaka-falls-state-park/">ʻAkaka Falls</a>,
           <a target="_blank" href="https://dlnr.hawaii.gov/dsp/parks/hawaii/hapuna-beach-state-recreation-area/">Hāpuna</a>,
@@ -561,5 +666,6 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:P
 </div>
 
 <footer class="footer">Made with 🌴 and aloha • Links auto-expand in the printed PDF.</footer>
+
 </body>
 </html>
