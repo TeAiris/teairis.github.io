@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kona, Hawaii — Tropical Itinerary (Sept 30 – Oct 6, 2025)</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f7fdfb;
+  --ink:#12302a;
+  --muted:#4d6b63;
+  --brand:#00b894;
+  --rose:#ef476f;
+  --card:#ffffff;
+  --shadow: 0 10px 30px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:Poppins,system-ui,Arial,sans-serif;line-height:1.55}
+
+/* Hero header */
+.header{
+  position:relative;min-height:70vh;display:grid;place-items:center;text-align:center;color:white;overflow:hidden;
+}
+.header::before{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.25)), url('https://images.unsplash.com/photo-1537996194471-e657df975ab4?q=80&w=1974&auto=format&fit=crop') center/cover no-repeat;
+  filter:saturate(1.1);
+}
+.header .title{position:relative;z-index:1;padding:2rem;max-width:900px}
+.kicker{letter-spacing:.2em;text-transform:uppercase;font-weight:600;opacity:.9}
+.h1{font-family:'Playfair Display',serif;font-size: clamp(2.2rem,5vw,4.2rem);margin:.3rem 0 1rem}
+.sub{font-size:1.1rem;opacity:.95}
+.cta-bar{margin-top:1.2rem;display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap}
+.btn{background:var(--brand);color:#fff;padding:.75rem 1rem;border-radius:100px;text-decoration:none;font-weight:700;box-shadow:var(--shadow)}
+.btn.alt{background:var(--rose)}
+.btn.ghost{background:rgba(255,255,255,.12);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.35)}
+.badge{display:inline-block;background:rgba(255,255,255,.2);padding:.35rem .7rem;border-radius:999px;margin-top:.6rem}
+
+/* Nav */
+.nav{position:sticky;top:0;background:rgba(255,255,255,.85);backdrop-filter:blur(8px);border-bottom:1px solid #e7f3ef;z-index:5}
+.nav .container{display:flex;gap:.8rem;align-items:center;justify-content:space-between;padding:.6rem 1rem}
+.chips{display:flex;gap:.5rem;flex-wrap:wrap}
+.chip{background:#eaf8f4;color:#0f3b31;border:1px solid #d3f0e7;padding:.4rem .75rem;border-radius:999px;text-decoration:none;font-size:.95rem}
+.print-note{font-size:.9rem;color:#2f4f46}
+
+/* Layout */
+.container{max-width:1100px;margin:auto;padding:2rem 1.2rem}
+.grid{display:grid;grid-template-columns:300px 1fr;gap:1.2rem}
+@media (max-width: 900px){.grid{grid-template-columns:1fr}}
+
+/* Sidebar */
+.sidebar{position:sticky;top:72px;align-self:start;background:var(--card);border:1px solid #eaf2ef;border-radius:16px;padding:1rem;box-shadow:var(--shadow)}
+.sidebar h3{margin-top:0;font-size:1.05rem;color:var(--muted)}
+.sidebar a{display:flex;gap:.6rem;align-items:center;text-decoration:none;color:var(--ink);padding:.5rem .6rem;border-radius:10px}
+.sidebar a:hover{background:#f0fbf8}
+
+/* Cards */
+.card{background:var(--card);border:1px solid #eaf2ef;border-radius:18px;overflow:hidden;box-shadow:var(--shadow);margin-bottom:1.5rem}
+.card .banner{height:180px;background-size:cover;background-position:center}
+.card .body{padding:1rem 1.2rem}
+.day-title{font-size:1.3rem;font-weight:800;margin:.2rem 0 1rem;color:#0b3b33}
+.item{display:grid;grid-template-columns:110px 1fr;gap:.8rem;padding:.8rem;border-radius:12px}
+.item:not(:last-child){border-bottom:1px dashed #e8f1ee}
+.time{font-weight:800;color:var(--brand)}
+.what{font-weight:600}
+.meta{font-size:.95rem;color:var(--muted)}
+.btn-row{margin-top:.4rem;display:flex;gap:.5rem;flex-wrap:wrap}
+.small-btn{font-size:.85rem;padding:.35rem .6rem;border-radius:999px;text-decoration:none;border:1px solid #d7efe9;background:#ecfbf7;color:#0f3b31}
+
+/* Budget */
+.section-title{font-size:1.6rem;font-weight:900;margin:1.6rem 0 .6rem;color:#0b3b33}
+.budget{border-collapse:collapse;width:100%;overflow:hidden;border-radius:14px;border:1px solid #eaf2ef;box-shadow:var(--shadow)}
+.budget th, .budget td{padding:12px 14px;text-align:left;vertical-align:top}
+.budget thead th{background:#eaf8f4;font-weight:900;color:#0b3b33}
+.budget tbody tr:nth-child(odd){background:#fcfffe}
+
+.tip{background:#fff7e6;border:1px solid #ffe4a3;border-radius:14px;padding:1rem;box-shadow:var(--shadow);margin-top:1rem}
+
+.footer{text-align:center;color:var(--muted);padding:2rem 1rem}
+
+/* Print styles */
+@media print{
+  .nav, .sidebar, .cta-bar, .badge, .print-note, .footer { display:none !important; }
+  .header { min-height: 40vh }
+  .grid { grid-template-columns: 1fr }
+  .card .banner { height: 120px }
+  a::after{content:" (" attr(href) ")"; font-size: .8rem; color:#666}
+  body{ background: #fff }
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="title">
+    <div class="kicker">KONA • HAWAI‘I</div>
+    <h1 class="h1">Tropical Itinerary<br><span style="font-size:.6em;opacity:.9">September 30 – October 6, 2025</span></h1>
+    <p class="sub">A 7-day island escape: beaches, volcanoes, waterfalls, manta rays, coffee farms, and Hawaiian culture.</p>
+    <div class="cta-bar">
+      <a class="btn print" onclick="window.print()">🖨️ Print / Save PDF</a>
+      <a class="btn ghost" href="#budget">💵 Budget at a Glance</a>
+      <span class="badge">Tip: This page is designed to export beautifully to PDF.</span>
+    </div>
+  </div>
+</header>
+
+<nav class="nav">
+  <div class="container">
+    <div class="chips">
+      <a class="chip" href="#day1">Day 1</a>
+      <a class="chip" href="#day2">Day 2</a>
+      <a class="chip" href="#day3">Day 3</a>
+      <a class="chip" href="#day4">Day 4</a>
+      <a class="chip" href="#day5">Day 5</a>
+      <a class="chip" href="#day6">Day 6</a>
+      <a class="chip" href="#day7">Day 7</a>
+      <a class="chip" href="#budget">Budget</a>
+    </div>
+    <div class="print-note">Use the button to save as PDF. Links remain clickable in the PDF.</div>
+  </div>
+</nav>
+
+<div class="container grid">
+  <aside class="sidebar">
+    <h3>Quick Jump</h3>
+    <div>
+      <a href="#day1">🌺 Arrival</a>
+      <a href="#day2">🏖️ Beaches & Luau</a>
+      <a href="#day3">🌋 Volcano Adventure</a>
+      <a href="#day4">🤿 South Kona Snorkel</a>
+      <a href="#day5">☕ Coffee & Falls</a>
+      <a href="#day6">🌌 Adventure & Stars</a>
+      <a href="#day7">✈️ Departure</a>
+      <a href="#budget">💵 Budget</a>
+    </div>
+  </aside>
+
+  <main>
+    <!-- DAY 1 -->
+    <section class="card" id="day1">
+      <div class="banner" style="background-image:url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1974&auto=format&fit=crop')"></div>
+      <div class="body">
+        <div class="day-title">📅 Day 1 – Sept 30 (Arrival)</div>
+
+        <div class="item">
+          <div class="time">6:00 PM</div>
+          <div>
+            <div class="what">Arrive at Kona International Airport (KOA)</div>
+            <div class="meta">📍 73-200 Kupipi St, Kalaoa, HI 96740</div>
+            <div class="btn-row">
+              <a class="small-btn" target="_blank" href="https://www.google.com/maps?q=73-200+Kupipi+St,+Kalaoa,+HI+96740">📍 Open in Maps</a>
+              <a class="small-btn" target="_blank" href="https://www.google.com/maps/place/Kona+International+Airport">ℹ️ More info</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="time">7:00 PM</div>
+          <div>
+            <div class="what">Check-in at hotel or Airbnb</div>
+            <div class="meta">📍 Kailua-Kona</div>
+            <div class="btn-row">
+              <a class="small-btn" target="_blank" href="https://www.google.com/maps?q=Kailua-Kona">📍 Open in Maps</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="time">7:30 PM</div>
+          <div>
+            <div class="what">Dinner at Huggo’s on the Rocks</div>
+            <div class="meta">📍 75-5828 Kahakai Rd, Kailua-Kona, HI • 💵 $20–40 • 👕 Casual / beachwear</div>
+            <div class="btn-row">
+              <a class="small-btn" target="_blank" href="https://www.google.com/maps?q=75-5828+Kahakai+Rd,+Kailua-Kona,+HI">📍 Open in Maps</a>
+              <a class="small-btn" target="_blank" href="https://huggosontherocks.com/">🍽️ Restaurant site</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="time">9:00 PM</div>
+          <div>
+            <div class="what">Sunset stroll along Aliʻi Drive</div>
+            <div class="meta">📍 Aliʻi Dr, Kailua-Kona • 💵 Free</div>
+            <div class="btn-row">
+              <a class="small-btn" target="_blank" href="https://www.google.com/maps?q=Ali%CA%BBi+Dr,+Kailua-Kona">📍 Open in Maps</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DAY 2 -->
+    <section class="card" id="day2">
+      <div class="banner" style="background-image:url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2070&auto=format&fit=crop')"></div>
+      <div class="body">
+        <div class="day-title">📅 Day 2 – Oct 1 (Beaches & Luau)</div>
+
+        <div class="item">
+          <div class="time">7:00 AM</div>
+          <div>
+            <div class="what">Breakfast at Basik Café</div>
+            <div class="meta">📍 75-5831 Kahakai Rd, Kailua-Kona, HI • 💵 $12–15</div>
+            <div class="btn-row">
+              <a class="small-btn" target="_blank" href="https://www.google.com/maps?q=75-5831+Kahakai+Rd,+Kailua-Kona,+HI">📍 Open in Maps</a>
+              <a class="small-btn" target="_blank" href="https://www.instagram.com/basikacai/">🍓 Menu/updates</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="time">8:00 AM – 12:00 PM</div>
+          <div>
+            <div class="what">Beach time at Kua Bay (Maniniʻowali Beach)</div>
+            <div class="meta">📍 72-2225 Queen Ka’ahumanu Hwy, Kailua-Kona, HI • 💵 Free • 👕 Swimsuit, reef-safe sunscreen</div>
+            <div class="btn-row">
+              <a class="small-btn" target="_blank" href="https://www.google.com/maps?q=Manini%CA%BBowali+Beach+(Kua+Bay)">📍 Open in Maps</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="time">12:30 PM</div>
+          <div>
+            <div class="what">Lunch in Kona town</div>
+            <div class="meta">📍 Kailua-Kona • 💵 $15–25</div>
+            <div class="btn-row"><a class="small-btn" target="_blank" href="https://www.google.com/maps/search/Kona+restaurants">🔎 Nearby restaurants</a></div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="time">1:30 – 4:00 PM</div>
+          <div>
+            <div class="what">Explore Kailua Village shops & sites</div>
+            <div class="meta">📍 Kailua Village • 👕 Casual</div>
+            <div class="btn-row"><a class="small-btn" target="_blank" href="https://www.google.com/maps?q=Kailua+Village+Kona">📍 Open in Maps</a></div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="time">5:30 PM</div>
+          <div>
+            <div class="what">Island Breeze Lūʻau</div>
+            <div class="meta">📍 Courtyard King Kamehameha’s Kona Beach Hotel, 75-5660 Palani Rd • 💵 ~$175 adult / $87.50 child • 👕 Resort casual</div>
+            <div class="btn-row">
+              <a class="small-btn" target="_blank" href="https://www.google.com/maps?q=75-5660+Palani+Rd,+Kailua-Kona,+HI">📍 Open in Maps</a>
+              <a class="small-btn" target="_blank" href="https://www.ibluau.com/">🎟️ Official booking</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DAY 3 -->
+    <section class="card" id="day3">
+      <div class="banner" style="background-image:url('https://images.unsplash.com/photo-1516557070061-c3d1653fa646?q=80&w=1974&auto=format&fit=crop')"></div>
+      <div class="body">
+        <div class="day-title">📅 Day 3 – Oct 2 (Volcano Adventure)</div>
+
+        <div class="item">
+          <div class="time">7:00 AM</div>
+          <div>
+            <div class="what">Breakfast & pack snacks</div>
+            <div class="meta">📍 Kailua-Kona • 👕 Comfortable</div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="time">7:00 – 10:00 AM</div>
+          <div>
+            <div class="what">Drive to Hawaiʻi Volcanoes National Park</div>
+            <div class="meta">📍 1 Crater Rim Dr, Volcano, HI 96785 • 💵 $30/vehicle (7-day pass) • 👕 Hiking shoes, light jacket</div>
+            <div class="btn-row">
+              <a class="small-btn" target="_blank" href="https://www.google.com/maps?q=1+Crater+Rim+Dr,+Volcano,+HI+96785">📍 Open in Maps</a>
+              <a class="small-btn" target="_blank" href="https://www.nps.gov/havo/">🌋 Official park site</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="time">10:00 AM – 2:30 PM</div>
+          <div>
+            <div class="what">Explore: Kīlauea overlooks, Crater Rim Drive, Thurston Lava Tube, steam vents</div>
+            <div class="meta">📍 Hawaiʻi Volcanoes NP</div>
+            <div class="btn-row">
+              <a class="small-btn" target="_blank" href="https://www.nps.gov/havo/planyourvisit/index.htm">🗺️ Plan your visit</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="time">3:00 PM</div>
+          <div>
+            <div class="what">Punaluʻu Black Sand Beach</div>
+            <div class="meta">📍 Hwy 11, Naʻalehu, HI 96772 • 💵 Free • 👕 Swimsuit, sandals</div>
+            <div class="btn-row"><a class="small-btn" target="_blank" href="https://www.google.com/maps?q=Punaluu+Black+Sand+Beach">📍 Open in Maps</a></div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="time">5:30 – 8:00 PM</div>
+          <div>
+            <div class="what">Dinner on return to Kona</div>
+            <div class="meta">📍 Kailua-Kona • 💵 $20–40</div>
+            <div class="btn-row"><a class="small-btn" target="_blank" href="https://www.google.com/maps/search/Kailua-Kona+restaurants">🔎 Find dinner spots</a></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DAY 4 -->
+    <section class="card" id="day4">
+      <div class="banner" style="background-image:url('https://images.unsplash.com/photo-1544551763-7ef4200a3229?q=80&w=1974&auto=format&fit=crop')"></div>
+      <div class="body">
+        <div class="day-title">📅 Day 4 – Oct 3 (Snorkeling & South Kona)</div>
+
+        <div class="item">
+          <div class="time">8:00 AM – 12:00 PM</div>
+          <div>
+            <div class="what">Kealakekua Bay Snorkel Tour (departs Keauhou Bay)</div>
+            <div class="meta">📍 78-7130 Kaleiopapa St, Kailua-Kona, HI • 💵 $110–150 • 👕 Swimsuit, towel</div>
+            <div class="btn-row">
+              <a class="small-btn" target="_blank" href="https://www.google.com/maps?q=78-7130+Kaleiopapa+St,+Kailua-Kona,+HI">📍 Open in Maps</a>
+              <a class="small-btn" target="_blank" href="https://www.hawaiistateparks.org/parks/kealakekua-bay-state-historical-park">ℹ️ Kealakekua Bay (State Park)</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="time">12:30 PM</div>
+          <div>
+            <div class="what">Lunch in Captain Cook</div>
+            <div class="meta">📍 Captain Cook, HI • 💵 $15–25</div>
+            <div class="btn-row"><a class="small-btn" target="_blank" href="https://www.google.com/maps/search/Captain+Cook+restaurants">🔎 Nearby restaurants</a></div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="time">2:00 – 4:00 PM</div>
+          <div>
+            <div class="what">“Two Step” (Hōnaunau Bay) shore snorkeling</div>
+            <div class="meta">📍 82-6009 Puuhonua Rd, Captain Cook, HI • 💵 Free • 👕 Snorkel gear</div>
+            <div class="btn-row"><a class="small-btn" target="_blank" href="https://www.google.com/maps?q=82-6009+Puuhonua+Rd,+Captain+Cook,+HI">📍 Open in Maps</a></div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="time">5:00 PM</div>
+          <div>
+            <div class="what">Dinner in Kona</div>
+            <div class="meta">📍 Kailua-Kona • 💵 $20–40</div>
+            <div class="btn-row"><a class="small-btn" target="_blank" href="https://www.google.com/maps/search/Kona+dinner">🔎 Find dinner spots</a></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DAY 5 -->
+    <section class="card" id="day5">
+      <div class="banner" style="background-image:url('https://images.unsplash.com/photo-1502082553048-f009c37129b9?q=80&w=1974&auto=format&fit=crop')"></div>
+      <div class="body">
+        <div class="day-title">📅 Day 5 – Oct 4 (Coffee & Waterfalls)</div>
+
+        <div class="item">
+          <div class="time">8:00 AM</div>
+          <div>
+            <div class="what">Greenwell Farms Coffee Tour</div>
+            <div class="meta">📍 81-6581 Mamalahoa Hwy, Kealakekua, HI • 💵 Free • 👕 Comfortable casual</div>
+            <div class="btn-row">
+              <a class="small-btn" target="_blank" href="https://www.google.com/maps?q=81-6581+Mamalahoa+Hwy,+Kealakekua,+HI">📍 Open in Maps</a>
+              <a class="small-btn" target="_blank" href="https://www.greenwellfarms.com/">☕ Official site</a>
+              <a class="small-btn" target="_blank" href="https://www.greenwellfarms.com/pages/big-island-kona-coffee-tours">🗓️ Tour info</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="time">9:00 – 11:30 AM</div>
+          <div>
+            <div class="what">Drive Saddle Road (Daniel K. Inouye Hwy) to Hilo</div>
+            <div class="meta">📍 Hawaiʻi Belt / Saddle Rd • 💵 Fuel</div>
+            <div class="btn-row"><a class="small-btn" target="_blank" href="https://www.google.com/maps?q=Daniel+K.+Inouye+Highway">📍 Open in Maps</a></div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="time">12:00 PM</div>
+          <div>
+            <div class="what">Rainbow Falls (Wailuku River State Park)</div>
+            <div class="meta">📍 2 Rainbow Dr, Hilo, HI • 💵 Free • 👕 Comfortable shoes</div>
+            <div class="btn-row">
+              <a class="small-btn" target="_blank" href="https://www.google.com/maps?q=2+Rainbow+Dr,+Hilo,+HI">📍 Open in Maps</a>
+              <a class="small-btn" target="_blank" href="https://dlnr.hawaii.gov/dsp/parks/hawaii/wailuku-river-state-park/">🌈 Official park page</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="time">1:00 PM</div>
+          <div>
+            <div class="what">Picnic or café in Hilo</div>
+            <div class="meta">📍 Hilo, HI • 💵 $10–20</div>
+            <div class="btn-row"><a class="small-btn" target="_blank" href="https://www.google.com/maps/search/Hilo+cafes">🔎 Find cafes</a></div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="time">2:00 PM</div>
+          <div>
+            <div class="what">ʻAkaka Falls State Park</div>
+            <div class="meta">📍 Akaka Falls Rd, Honomu, HI 96728 • 💵 Non-resident fees apply • 👕 Walking shoes, bug spray</div>
+            <div class="btn-row">
+              <a class="small-btn" target="_blank" href="https://www.google.com/maps?q=%CA%BBAkaka+Falls+State+Park">📍 Open in Maps</a>
+              <a class="small-btn" target="_blank" href="https://dlnr.hawaii.gov/dsp/parks/hawaii/akaka-falls-state-park/">🌿 Official park page</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="time">3:30 – 6:30 PM</div>
+          <div>
+            <div class="what">Return to Kona</div>
+            <div class="meta">📍 Kailua-Kona • 💵 Fuel</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DAY 6 -->
+    <section class="card" id="day6">
+      <div class="banner" style="background-image:url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1974&auto=format&fit=crop')"></div>
+      <div class="body">
+        <div class="day-title">📅 Day 6 – Oct 5 (Adventure & Stargazing)</div>
+
+        <div class="item">
+          <div class="time">8:00 AM – 1:00 PM</div>
+          <div>
+            <div class="what">Hāpuna Beach State Recreation Area</div>
+            <div class="meta">📍 Old Puako Rd, Waimea, HI 96743 • 💵 Parking/entry fees may apply • 👕 Swimsuit</div>
+            <div class="btn-row">
+              <a class="small-btn" target="_blank" href="https://www.google.com/maps?q=Hapuna+Beach+State+Recreation+Area">📍 Open in Maps</a>
+              <a class="small-btn" target="_blank" href="https://dlnr.hawaii.gov/dsp/parks/hawaii/hapuna-beach-state-recreation-area/">🏖️ Official park page</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="time">1:30 PM</div>
+          <div>
+            <div class="what">Lunch nearby</div>
+            <div class="meta">📍 Waimea / Puako • 💵 $15–25</div>
+            <div class="btn-row"><a class="small-btn" target="_blank" href="https://www.google.com/maps/search/Waimea+restaurants">🔎 Find restaurants</a></div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="time">3:00 PM</div>
+          <div>
+            <div class="what">Puʻukoholā Heiau National Historic Site</div>
+            <div class="meta">📍 62-3601 Kawaihae Rd, Waimea, HI • 💵 Free • 👕 Casual</div>
+            <div class="btn-row">
+              <a class="small-btn" target="_blank" href="https://www.google.com/maps?q=Pu%CA%BBukohol%C4%81+Heiau+National+Historic+Site">📍 Open in Maps</a>
+              <a class="small-btn" target="_blank" href="https://www.nps.gov/puhe/">🏛️ Official NPS page</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="time">6:30 – 9:30 PM</div>
+          <div>
+            <div class="what">Choose your adventure: Manta Ray Night Snorkel or Mauna Kea Stargazing Tour</div>
+            <div class="meta">📍 Honokōhau Harbor: 74-380 Kealakehe Pkwy, Kailua-Kona • 💵 ~$140+ • 👕 Swimsuit or warm layers</div>
+            <div class="btn-row">
+              <a class="small-btn" target="_blank" href="https://www.google.com/maps?q=74-380+Kealakehe+Pkwy,+Kailua-Kona,+HI">📍 Harbor in Maps</a>
+              <a class="small-btn" target="_blank" href="https://www.google.com/maps/search/Mauna+Kea+stargazing+tours">🌌 Stargazing tours</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DAY 7 -->
+    <section class="card" id="day7">
+      <div class="banner" style="background-image:url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2070&auto=format&fit=crop')"></div>
+      <div class="body">
+        <div class="day-title">📅 Day 7 – Oct 6 (Departure)</div>
+
+        <div class="item">
+          <div class="time">9:00 AM – 12:00 PM</div>
+          <div>
+            <div class="what">Last swim at Kua Bay</div>
+            <div class="meta">📍 Maniniʻowali (Kua) Bay • 💵 Free • 👕 Swimsuit</div>
+            <div class="btn-row"><a class="small-btn" target="_blank" href="https://www.google.com/maps?q=Kua+Bay">📍 Open in Maps</a></div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="time">12:30 PM</div>
+          <div>
+            <div class="what">Lunch & shopping in Kailua Village</div>
+            <div class="meta">📍 Kailua Village • 💵 $15–25</div>
+            <div class="btn-row"><a class="small-btn" target="_blank" href="https://www.google.com/maps/search/Kailua+Village+shopping">🛍️ Shopping map</a></div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="time">2:00 – 4:00 PM</div>
+          <div>
+            <div class="what">Pack, relax</div>
+            <div class="meta">📍 Lodging</div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="time">4:30 PM</div>
+          <div>
+            <div class="what">Return rental car at KOA</div>
+            <div class="meta">📍 73-200 Kupipi St, Kalaoa, HI 96740</div>
+            <div class="btn-row"><a class="small-btn" target="_blank" href="https://www.google.com/maps?q=73-200+Kupipi+St,+Kalaoa,+HI+96740">📍 Open in Maps</a></div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="time">6:00 PM</div>
+          <div>
+            <div class="what">Depart</div>
+            <div class="meta">📍 Kona International Airport (KOA)</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BUDGET -->
+    <section class="card" id="budget">
+      <div class="body">
+        <div class="day-title section-title">💵 Budget at a Glance (per person)</div>
+        <table class="budget">
+          <thead><tr><th>Category</th><th>Details</th></tr></thead>
+          <tbody>
+            <tr><td><strong>🚗 Transportation</strong></td><td>Fuel (island driving): ~$120; Parking fees: ~$20</td></tr>
+            <tr><td><strong>🎉 Activities & Tours</strong></td><td>Luau: ~$175 adult; Kealakekua Bay Snorkel: ~$130; Manta Ray Night Snorkel: ~$140; Volcano NP entry: $30/vehicle; ʻAkaka Falls: non-resident fees; Coffee Tour: Free</td></tr>
+            <tr><td><strong>🍍 Food</strong></td><td>Breakfast/Lunch: $25–35/day; Dinner: $40–60/day; 7-day total: $400–500</td></tr>
+            <tr><td><strong>🛍 Extras</strong></td><td>Souvenirs, coffee, local shopping: $100+</td></tr>
+            <tr><td><strong>✅ Estimated Total</strong></td><td>$1,000–$1,200 per person (excluding flight, lodging, car rental)</td></tr>
+          </tbody>
+        </table>
+
+        <div class="tip">
+          <strong>Tip:</strong> Some sites require fees or have notices (renovations, hours, parking). Check official pages:
+          <a target="_blank" href="https://www.nps.gov/havo/">Hawaiʻi Volcanoes NP</a>,
+          <a target="_blank" href="https://dlnr.hawaii.gov/dsp/parks/hawaii/akaka-falls-state-park/">ʻAkaka Falls</a>,
+          <a target="_blank" href="https://dlnr.hawaii.gov/dsp/parks/hawaii/hapuna-beach-state-recreation-area/">Hāpuna</a>,
+          <a target="_blank" href="https://www.nps.gov/puhe/">Puʻukoholā Heiau</a>,
+          <a target="_blank" href="https://www.ibluau.com/">Island Breeze Lūʻau</a>,
+          <a target="_blank" href="https://www.greenwellfarms.com/pages/big-island-kona-coffee-tours">Greenwell tours</a>.
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<footer class="footer">Made with 🌴 and aloha • Links auto-expand in the printed PDF.</footer>
+</body>
+</html>
