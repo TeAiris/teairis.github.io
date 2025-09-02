@@ -18,7 +18,7 @@
     :root {
       /* === Theme === */
       --ui-fg: #111;
-      --ui-bg: #fff;
+      --ui-bg: rgba(0,0,0,0); /* fully transparent */
 
       /* === Cursor (vertical playhead) === */
       --cursor-color: rgba(255,150,0,.8);   /* retain your current value */
@@ -59,7 +59,7 @@
     }
     body.dark {
       --ui-fg: #fff;
-      --ui-bg: #000;
+      --ui-bg: rgba(0,0,0,0); /* fully transparent */
       --cursor-color: rgba(0,100,255,.8);   /* retain your current dark value */
       --loop-mask-color: rgba(255,255,255,0.10);
     }
@@ -177,10 +177,26 @@
     /* Light/Dark */
     body { background: var(--ui-bg); color: var(--ui-fg); }
     .controls, .controls label, .controls span, .controls button { color: inherit; }
-
-    body.dark #sheet { background: transparent; }
-    body.dark #sheet svg { background: transparent !important; color:#000 !important; }
-    body.dark #sheet svg rect[fill="#ffffff"], body.dark #sheet svg rect[fill="#fff"], body.dark #sheet svg rect[fill="white"] { fill: transparent !important; }
+    
+    /* Force full transparency for page and notation surfaces */
+    html, body, #notationWrap, #sheet { background: transparent !important; }
+    #sheet svg { background: transparent !important; }
+    /* Ensure white page rects from render are transparent in all themes */
+    #sheet svg rect[fill="#ffffff"],
+    #sheet svg rect[fill="#fff"],
+    #sheet svg rect[fill="white"] { fill: transparent !important; }
+    
+    /* Make divider/resizer variables fully transparent to avoid any bars */
+    :root {
+      --notation-divider-color-light: rgba(0,0,0,0);
+      --notation-divider-color-dark:  rgba(0,0,0,0);
+      --resizer-line-color-light: rgba(0,0,0,0);
+      --resizer-line-color-dark:  rgba(0,0,0,0);
+      --resizer-mark-color-light: rgba(0,0,0,0);
+      --resizer-mark-color-dark:  rgba(0,0,0,0);
+      --bar-highlight-color: rgba(0,0,0,0);
+      --loop-mask-color: rgba(0,0,0,0);
+    }
     body.dark .controls button { background: rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.25); }
     body.dark input[type="range"]::-webkit-slider-thumb,
     body.dark input[type="range"]::-moz-range-thumb { background:#fff; }
