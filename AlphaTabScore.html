@@ -20,7 +20,7 @@
       --ui-bg: #fff;
 
       /* === Cursor (vertical playhead) === */
-      --cursor-color: rgba(255,150,0,.2);   /* retain your current value */
+      --cursor-color: rgba(255,150,0,.8);   /* retain your current value */
       --cursor-alpha: .2;                    /* separate opacity for cursor visuals */
       --cursor-width: 1000px;                   /* slim playhead width */
       --cursor-glow: 100px;                  /* retain current glow */
@@ -34,6 +34,8 @@
       --loop-line-glow: 6px;          /* retain your current */
       --loop-line-offset: 40px;       /* retain your current */
       --loop-line-thickness: 4px;     /* retain your current */
+      /* === Loop mask (dim areas outside loop) === */
+      --loop-mask-color: rgba(0,0,0,0.08);
 
       /* === Notation divider === */
       --notation-divider-color-light: rgba(0,0,0,0.12);
@@ -57,7 +59,8 @@
     body.dark {
       --ui-fg: #fff;
       --ui-bg: #000;
-      --cursor-color: rgba(0,100,255,.2);   /* retain your current dark value */
+      --cursor-color: rgba(0,100,255,.8);   /* retain your current dark value */
+      --loop-mask-color: rgba(255,255,255,0.10);
     }
 
     /* Notation wrapper controls size; #sheet fills it */
@@ -140,10 +143,12 @@
     .at-cursor, .at-cursor-beat {
       background: rgb(from var(--cursor-color) r g b / var(--cursor-alpha)) !important;
       width: var(--cursor-width) !important;
-      box-shadow: 0 0 0 2px rgba(255,255,255,0.5), 0 0 var(--cursor-glow) rgb(from var(--cursor-color) r g b / var(--cursor-alpha));
+      box-shadow: 0 0 var(--cursor-glow) rgb(from var(--cursor-color) r g b / var(--cursor-alpha)); /* remove white edge to avoid top/bottom caps */
       translate: var(--cursor-offset-x) 0; /* uses individual transform property so it COMBINES with AlphaTab's inline transform */
       border-radius: var(--radius-md);
       overflow: hidden; /* clip fill to rounded corners */
+      outline: none;
+      background-clip: padding-box; /* prevent any subtle edge halos */
       pointer-events: none;
     }
 
@@ -162,6 +167,10 @@
     #sheet .at-viewport, #sheet .at-viewport svg, #sheet svg { position: relative; z-index: 0; }
     #sheet .at-selection { position: relative; z-index: 1; }
     #sheet .at-overlay  { position: relative; z-index: 2; }
+    /* Loop mask strips (left/right) dim non-loop areas */
+    #sheet .loop-mask{ position:absolute; top:0; bottom:0; background: var(--loop-mask-color); pointer-events:none; z-index: 3; }
+    #sheet .loop-mask.left{ left:0; }
+    #sheet .loop-mask.right{ right:0; }
     #sheet .at-cursor, #sheet .at-cursor-beat, #sheet .at-cursor-bar { position: relative; z-index: 5; }
 
     /* Light/Dark */
@@ -185,7 +194,7 @@
 </head>
 <body>
   <div id="notationWrap">
-    <div id="sheet"></div>
+      <div id="sheet" tabindex="0" aria-label="Score area (use ←/→ to move note focus)"></div>
     <div class="notation-divider" aria-hidden="true"></div>
     <div class="notation-resizer" title="Drag to resize notation height" aria-hidden="true"></div>
   </div>
@@ -289,11 +298,11 @@
         <span id="hlHVal">210</span>
       </label>
       <label title="Saturation (0–100%)" style="display:inline; margin-left:8px;">S:
-        <input id="hlS" type="range" min="0" max="100" value="70" style="width:60px;">
+        <input id="hlS" type="range" min="0" max="100" value="0" style="width:60px;">
         <span id="hlSVal">70</span>%
       </label>
       <label title="Value/Brightness (0–100%)" style="display:inline; margin-left:8px;">V:
-        <input id="hlV" type="range" min="0" max="100" value="80" style="width:60px;">
+        <input id="hlV" type="range" min="0" max="100" value="100" style="width:60px;">
         <span id="hlVVal">80</span>%
       </label>
     </span>
@@ -316,6 +325,12 @@
     <label title="Prefer flats for enharmonic keys (Db/Gb/Cb); when off uses C#/F#/B">
       <input id="enhToggle" type="checkbox"> Prefer flats
     </label>
+      <span style="margin-left:12px;">Current Key:
+  <strong id="currentKey">—</strong>
+</span>
+      <label title="Show the relative minor instead of the major key name">
+          <input id="relMinorToggle" type="checkbox"> Relative minor
+      </label>
 
     <!-- debug -->
     <span id="pos">00:00 / 00:00</span>
@@ -351,6 +366,7 @@
 
       // timing
       currentBpm: CONFIG.DEFAULT_BPM,
+      baseBpm: CONFIG.DEFAULT_BPM,
 
       // tick cache / accents
       tickCacheReady: false,
@@ -398,6 +414,8 @@
     const transposeVal = document.getElementById('transposeVal');
     const keySigToggle = document.getElementById('keySigToggle');
     const enhToggle = document.getElementById('enhToggle');
+      const keyDisplay = document.getElementById('currentKey');
+      const relMinorToggle = document.getElementById('relMinorToggle');
 
     // SoundFont & Metronome controls
     const sfSelect = document.getElementById('sfSelect');
@@ -423,7 +441,7 @@
 const btnPrevNote = document.getElementById('prevNote');
 const btnNextNote = document.getElementById('nextNote');
 
-// Previous Note button handler
+/*// Previous Note button handler
 if (btnPrevNote) btnPrevNote.onclick = () => {
   if (highlightNotesList.length === 0) return;
   let idx = highlightedNoteIdx <= 0 ? highlightNotesList.length - 1 : highlightedNoteIdx - 1;
@@ -436,8 +454,44 @@ if (btnNextNote) btnNextNote.onclick = () => {
   let idx = highlightedNoteIdx < 0 ? 0 : highlightedNoteIdx + 1;
   if (idx >= highlightNotesList.length) idx = 0;
   highlightNoteAt(idx);
-};
+};*/
 
+      function prevNote(){
+          if (highlightNotesList.length === 0) return;
+          let idx = (highlightedNoteIdx <= 0) ? (highlightNotesList.length - 1) : (highlightedNoteIdx - 1);
+          highlightNoteAt(idx);
+      }
+      function nextNote(){
+          if (highlightNotesList.length === 0) return;
+          let idx = (highlightedNoteIdx < 0) ? 0 : (highlightedNoteIdx + 1);
+          if (idx >= highlightNotesList.length) idx = 0;
+          highlightNoteAt(idx);
+      }
+// Button hooks
+      if (btnPrevNote) btnPrevNote.onclick = prevNote;
+      if (btnNextNote) btnNextNote.onclick = nextNote;
+
+      // Keyboard navigation when the score is focused
+      let scoreHasFocus = false;
+
+      if (container) {
+          // Click to focus the score area
+          container.addEventListener('mousedown', () => { try { container.focus(); } catch {} });
+
+          // Track whether focus is inside #sheet
+          container.addEventListener('focusin', () => { scoreHasFocus = true; });            // bubbles; good for children too  [oai_citation:3‡MDN Web Docs](https://developer.mozilla.org/en-US/docs/Web/API/Element/focusin_event?utm_source=chatgpt.com)
+          container.addEventListener('focusout', (e) => {                                    // bubbles on exit  [oai_citation:4‡MDN Web Docs](https://developer.mozilla.org/en-US/docs/Web/API/Element/focusout_event?utm_source=chatgpt.com)
+              const to = e.relatedTarget;
+              scoreHasFocus = !!(to && container.contains(to));
+          });
+      }
+
+// Global keydown: act only when the score currently has focus
+      document.addEventListener('keydown', (e) => {
+          if (!scoreHasFocus) return;
+          if (e.key === 'ArrowLeft')  { e.preventDefault(); prevNote(); }   // use .key, not keyCode (deprecated)  [oai_citation:5‡MDN Web Docs](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key?utm_source=chatgpt.com)
+          else if (e.key === 'ArrowRight') { e.preventDefault(); nextNote(); }
+      });
     /* =========================
        AlphaTab init + TEX
        ========================= */
@@ -458,7 +512,7 @@ if (btnNextNote) btnNextNote.onclick = () => {
       if (includeKey && keyRawIn) {
         // Allow A..G with optional #/b only; dropdown already provides normalized options
         const m = keyRawIn.match(/^([A-G](?:#|b)?)$/i);
-        if (m) keyLine = `\\key ${m[1]}`;
+        if (m) keyLine = ` `;
       }
 
       const body = (compBody?.value ?? '').toString().trim();
@@ -473,6 +527,10 @@ if (btnNextNote) btnNextNote.onclick = () => {
         const tex = buildTexFromUI(overrideBpm, useKey);
         STATE.currentBpm = parseInt(overrideBpm ?? (compTempo?.value || CONFIG.DEFAULT_BPM),10) || CONFIG.DEFAULT_BPM;
         api.tex(tex);
+          // Ensure written key follows dropdown even if we had to retry render
+          try { setScoreKeyFromDropdown(); api.render(); } catch {}
+
+          updateCurrentKeyUI();
       };
       try {
         tryRender(true); // with key
@@ -556,6 +614,7 @@ if (btnNextNote) btnNextNote.onclick = () => {
     applySoundFontChoice(savedSf);
     const renderScoreWithBpm = (bpm) => {
       STATE.currentBpm = bpm;
+      if (!STATE.baseBpm || STATE.baseBpm <= 0) STATE.baseBpm = STATE.currentBpm;
       if (compTempo) compTempo.value = String(bpm);
       renderFromUI(bpm);
     };
@@ -870,7 +929,38 @@ if (btnNextNote) btnNextNote.onclick = () => {
       if (typeof pr.s === 'number' && typeof pr.e === 'number' && pr.e > pr.s) { s = pr.s; e = pr.e; used = pr.src; }
       else if (typeof api.score?.duration === 'number') { s = 0; e = api.score.duration; used = 'score.duration'; }
       loopStartTick = s; loopEndTick = e; updateDebug(`(setLoop via ${used})`);
+      updateLoopMasks();
       return (loopStartTick != null && loopEndTick != null);
+    }
+
+    // === Loop mask helpers: dim everything outside the loop selection ===
+    let loopMaskL = null, loopMaskR = null;
+    function ensureLoopMasks(){
+      try {
+        const overlay = document.querySelector('#sheet .at-overlay');
+        if (!overlay) return null;
+        if (!loopMaskL){ loopMaskL = document.createElement('div'); loopMaskL.className = 'loop-mask left'; overlay.appendChild(loopMaskL); }
+        if (!loopMaskR){ loopMaskR = document.createElement('div'); loopMaskR.className = 'loop-mask right'; overlay.appendChild(loopMaskR); }
+        return overlay;
+      } catch { return null; }
+    }
+    function updateLoopMasks(){
+      const overlay = ensureLoopMasks();
+      if (!overlay){ return; }
+      const sel = document.querySelector('#sheet .at-selection div');
+      const on = !!loopEnabled && !!sel;
+      loopMaskL.style.display = on ? '' : 'none';
+      loopMaskR.style.display = on ? '' : 'none';
+      if (!on) return;
+      const ob = overlay.getBoundingClientRect();
+      const sb = sel.getBoundingClientRect();
+      // widths relative to overlay
+      const leftW = Math.max(0, Math.round(sb.left - ob.left));
+      const rightW = Math.max(0, Math.round(ob.right - sb.right));
+      loopMaskL.style.left = '0px';
+      loopMaskL.style.width = leftW + 'px';
+      loopMaskR.style.right = '0px';
+      loopMaskR.style.width = rightW + 'px';
     }
 
     function updateDebug(extra=''){
@@ -909,6 +999,7 @@ if (btnNextNote) btnNextNote.onclick = () => {
       api.playbackRange = { startTick: Math.max(0, Math.min(s, e-1)), endTick: Math.max(s+1, e) };
       if (loopEnabled) setLoopFromActiveRange();
       updateDebug('(start=ct)');
+      updateLoopMasks();
     };
     if (btnSetEnd) btnSetEnd.onclick = () => {
       const ct = currentTick(); if (ct == null) return;
@@ -917,6 +1008,7 @@ if (btnNextNote) btnNextNote.onclick = () => {
       api.playbackRange = { startTick: Math.max(0, Math.min(s, e-1)), endTick: Math.max(s+1, e) };
       if (loopEnabled) setLoopFromActiveRange();
       updateDebug('(end=ct)');
+      updateLoopMasks();
     };
 
     // toggle loop using the same button id as HTML (#loop)
@@ -929,6 +1021,7 @@ if (btnNextNote) btnNextNote.onclick = () => {
         if (loopEnabled) setLoopFromActiveRange(); else { loopStartTick = loopEndTick = null; }
         try { api.isLooping = false; } catch(_) {}
         updateDebug(loopEnabled ? '(loop:on)' : '(loop:off)');
+        updateLoopMasks();
       });
     }
 
@@ -953,7 +1046,7 @@ if (btnNextNote) btnNextNote.onclick = () => {
       updateDebug();
     });
 
-    api.playbackRangeChanged?.on?.(()=>{ if (loopEnabled) setLoopFromActiveRange(); updateDebug('(PR changed)'); });
+    api.playbackRangeChanged?.on?.(()=>{ if (loopEnabled) setLoopFromActiveRange(); updateDebug('(PR changed)'); updateLoopMasks(); });
 
     api.playerFinished.on(()=>{
       if (!loopEnabled || loopStartTick == null) return;
@@ -961,6 +1054,7 @@ if (btnNextNote) btnNextNote.onclick = () => {
     });
 
     api.scoreLoaded.on(()=>{ setLoopFromActiveRange(); LOOP_SEEK_EARLY_TICKS = msToTicks(EARLY_MS); updateDebug(`(recalc early=${LOOP_SEEK_EARLY_TICKS}t ~${ticksToMs(LOOP_SEEK_EARLY_TICKS)}ms)`);
+      updateLoopMasks();
 
 
     });
@@ -969,11 +1063,61 @@ if (btnNextNote) btnNextNote.onclick = () => {
     /* =========================
        Strict key mapping + enharmonics
        ========================= */
+
+      // --- Key name helpers (written key dropdown) ---
+      const KEYNAME_TO_KS = {
+          'C':0,'G':1,'D':2,'A':3,'E':4,'B':5,'F#':6,'C#':7,
+          'F':-1,'Bb':-2,'Eb':-3,'Ab':-4,'Db':-5,'Gb':-6,'Cb':-7
+      };
+// Pitch class of the tonic for each major key (C=0 … B=11)
+      const KEYNAME_TO_PC = {
+          'C':0,'G':7,'D':2,'A':9,'E':4,'B':11,'F#':6,'C#':1,
+          'F':5,'Bb':10,'Eb':3,'Ab':8,'Db':1,'Gb':6,'Cb':11
+      };
+
+// Force the score's written key to match the dropdown (no re-render if not needed)
+      function setScoreKeyFromDropdown(){
+          try{
+              const name = (compKey?.value || '').trim();
+              if (!name) return;
+              const ks = KEYNAME_TO_KS[name];
+              if (typeof ks === 'number') setScoreKeySignatureVal(ks);
+          } catch(e){ console.warn('setScoreKeyFromDropdown failed', e); }
+      }
+
     // Sharps preference: C#, F#, B
     const PC_TO_KS_SHARPS = { 0:0, 1:7, 2:2, 3:-3, 4:4, 5:-1, 6:6, 7:1, 8:-4, 9:3, 10:-2, 11:5 };
     // Flats  preference: Db, Gb, Cb
     const PC_TO_KS_FLATS  = { 0:0, 1:-5, 2:2, 3:-3, 4:4, 5:-1, 6:-6, 7:1, 8:-4, 9:3, 10:-2, 11:-7 };
 
+      // Pitch-class → key-name maps for display
+      const PC_TO_NAME_SHARPS = { 0:'C', 1:'C#', 2:'D', 3:'D#', 4:'E', 5:'F', 6:'F#', 7:'G', 8:'G#', 9:'A', 10:'A#', 11:'B' };
+      const PC_TO_NAME_FLATS  = { 0:'C', 1:'Db', 2:'D', 3:'Eb', 4:'E', 5:'F', 6:'Gb', 7:'G', 8:'Ab', 9:'A', 10:'Bb', 11:'B' };
+
+// Compute & show current key (adapts to transposition and enharmonic preference)
+      function updateCurrentKeyUI(){
+          try{
+              if (!keyDisplay) return;
+              // Base = dropdown key if set, otherwise C
+              const hasKey = !!(compKey && compKey.value && compKey.value.trim());
+              const baseName = hasKey ? compKey.value.trim() : 'C';
+              const basePc = KEYNAME_TO_PC[baseName];
+              const semi = (typeof STATE?.transposeSemis === 'number') ? STATE.transposeSemis : 0;
+              const pc = (((basePc ?? 0) + ((semi % 12) + 12) % 12) % 12);
+              const map = STATE.preferFlats ? PC_TO_NAME_FLATS : PC_TO_NAME_SHARPS;
+
+              let name = map[pc] || 'C';
+              const relMinorOn = !!(relMinorToggle && relMinorToggle.checked);
+              if (relMinorOn){
+                  // Relative minor tonic is major tonic - 3 semitones (≡ +9)
+                  const mPc = (pc + 9) % 12;
+                  name = map[mPc] || name;
+                  keyDisplay.textContent = name + ' minor';
+              } else {
+                  keyDisplay.textContent = name + ' major';
+              }
+          } catch(e){ console.warn('updateCurrentKeyUI failed', e); }
+      }
     const clampSemis = (val) => Math.max(-12, Math.min(12, Math.trunc(val)));
     const reflectTransposeUI = (val) => { if (transposeVal) transposeVal.textContent = String(val); };
 
@@ -1031,10 +1175,25 @@ if (btnNextNote) btnNextNote.onclick = () => {
 
         api.updateSettings();
 
-        if (s.notation.transposeKeySignatures){
-          const targetKS = computePreferredKSAfterTranspose(STATE.transposeSemis);
-          setScoreKeySignatureVal(targetKS);
-        }
+          if (s.notation.transposeKeySignatures){
+              let targetKS = null;
+              const hasKeyInUI = !!(typeof compKey !== 'undefined' && compKey && compKey.value && compKey.value.trim());
+              if (hasKeyInUI) {
+                  const baseName = compKey.value.trim();
+                  const basePc = KEYNAME_TO_PC[baseName];
+                  if (typeof basePc === 'number') {
+                      const n = ((basePc + ((STATE.transposeSemis % 12)+12)%12) % 12); // transposed tonic PC
+                      const map = STATE.preferFlats ? PC_TO_KS_FLATS : PC_TO_KS_SHARPS;
+                      targetKS = map[n] ?? 0;
+                  }
+              }
+              if (targetKS == null) {
+                  // Fallback when no dropdown key: behave like before
+                  targetKS = computePreferredKSAfterTranspose(STATE.transposeSemis);
+              }
+              setScoreKeySignatureVal(targetKS);
+          }
+          updateCurrentKeyUI();
         try { api.render(); } catch {}
       } catch (e) { console.warn('transpose notation failed', e); }
 
@@ -1106,48 +1265,29 @@ if (btnNextNote) btnNextNote.onclick = () => {
     });
 
     // tempo
-    let tempoDrag = { active:false, wasPlaying:false, savedTick:0 };
-
     tempoVal.textContent = tempoSlider.value;
 
-    // Begin drag: capture state and pause if playing
-    const beginTempoDrag = () => {
-      if (tempoDrag.active) return;
-      tempoDrag.active = true;
-      tempoDrag.wasPlaying = (api?.player?.state === alphaTab.synth.PlayerState.Playing);
-      tempoDrag.savedTick = currentTick() ?? 0;
-      if (tempoDrag.wasPlaying) { try { api.pause(); } catch {} }
+    // Realtime tempo control: change speed during playback without pausing or re-rendering
+    const updatePlaybackSpeedFromBpm = (bpmVal) => {
+      const base = STATE.baseBpm > 0 ? STATE.baseBpm : CONFIG.DEFAULT_BPM;
+      const target = parseInt(bpmVal, 10) || base;
+      const ratio = Math.max(0.25, Math.min(4, target / base)); // clamp 25%..400%
+      try { api.playbackSpeed = ratio; } catch {}
+      STATE.currentBpm = target;
+      tempoVal.textContent = String(target);
+      if (compTempo) compTempo.value = String(target);
     };
 
-    // Update during drag: only update UI fields; do NOT re-render score
+    // Live updates while dragging the slider
     tempoSlider.addEventListener('input', () => {
-      const bpm = parseInt(tempoSlider.value,10) || STATE.currentBpm;
-      tempoVal.textContent = bpm;
-      if (compTempo) compTempo.value = String(bpm);
+      updatePlaybackSpeedFromBpm(tempoSlider.value);
+      tempoSlider.dataset.touched = '1';
     });
 
-    // Pointer/touch start hooks to mark drag start
-    tempoSlider.addEventListener('pointerdown', beginTempoDrag);
-    tempoSlider.addEventListener('mousedown', beginTempoDrag);
-    tempoSlider.addEventListener('touchstart', beginTempoDrag, { passive: true });
-
-    // On release: render with new tempo, restore tick, and resume if it was playing
+    // On release, just persist — no re-render, no pause
     tempoSlider.addEventListener('change', () => {
-      tempoSlider.dataset.touched = '1';
-      const bpm = parseInt(tempoSlider.value,10) || STATE.currentBpm;
-      if (compTempo) compTempo.value = String(bpm);
-
-      const { wasPlaying, savedTick } = tempoDrag;
-      const resume = () => {
-        try { api.scoreLoaded.off(resume); } catch {}
-        try { api.midiLoaded?.off?.(resume); } catch {}
-        try { api.tickPosition = savedTick; if (wasPlaying) api.play(); } catch {}
-        tempoDrag.active = false;
-      };
-      try { api.scoreLoaded.on(resume); } catch {}
-      try { api.midiLoaded.on(resume); } catch {}
-
-      renderScoreWithBpm(bpm);
+      updatePlaybackSpeedFromBpm(tempoSlider.value);
+      try { localStorage.setItem('comp.tempo', String(STATE.currentBpm)); } catch {}
     });
 
     // Composer persistence & wiring
@@ -1160,7 +1300,8 @@ if (btnNextNote) btnNextNote.onclick = () => {
         const a = localStorage.getItem(LS_KEYS.a) === '1';
         const m = parseInt(localStorage.getItem(LS_KEYS.m) || `${CONFIG.DEFAULT_BPM}`, 10) || CONFIG.DEFAULT_BPM;
         if (compTitle) compTitle.value = t;
-        if (compKey)   compKey.value   = k;
+        // Set compKey.value to k or default to 'C' if k is falsy/empty
+        if (compKey)   compKey.value   = k || 'C';
         if (compBody)  compBody.value  = b;
         if (compAuto)  compAuto.checked = a;
         if (compTempo) compTempo.value = String(m);
@@ -1181,7 +1322,16 @@ if (btnNextNote) btnNextNote.onclick = () => {
     if (compAuto)  compAuto.addEventListener('change', saveComposer);
     ['input','change'].forEach(evt=>{
       if (compTitle) compTitle.addEventListener(evt, ()=>{ if (compAuto?.checked) renderFromUI(); saveComposer(); });
-      if (compKey)   compKey.addEventListener(evt,   ()=>{ if (compAuto?.checked) renderFromUI(); saveComposer(); });
+      if (compKey)   compKey.addEventListener(evt,   ()=>{
+            if (compAuto?.checked) {
+                renderFromUI(); // full rebuild using \key
+            } else {
+                // update written key in-place without a full rebuild
+                try { setScoreKeyFromDropdown(); api.render(); } catch {}
+            }
+          updateCurrentKeyUI();
+            saveComposer();
+        });
       if (compBody)  compBody.addEventListener(evt,  ()=>{ if (compAuto?.checked) renderFromUI(); saveComposer(); });
       if (compTempo) compTempo.addEventListener(evt, ()=>{ const v=parseInt(compTempo.value||`${CONFIG.DEFAULT_BPM}`,10)||CONFIG.DEFAULT_BPM; tempoSlider.value=String(v); tempoVal.textContent=String(v); if (compAuto?.checked) renderFromUI(v); saveComposer(); });
     });
@@ -1260,9 +1410,24 @@ if (btnNextNote) btnNextNote.onclick = () => {
         STATE.preferFlats = enhToggle.checked;
         try { localStorage.setItem('enhPreferFlats', STATE.preferFlats ? '1' : '0'); } catch {}
         applyNotationTranspose(STATE.transposeSemis);
+          updateCurrentKeyUI();
       });
     }
 
+      // Relative minor toggle persistence + wiring
+      (function initRelMinor(){
+          try {
+              const saved = localStorage.getItem('showRelativeMinor');
+              if (relMinorToggle) relMinorToggle.checked = (saved === '1');
+          } catch {}
+          updateCurrentKeyUI();
+      })();
+      if (relMinorToggle){
+          relMinorToggle.addEventListener('change', () => {
+              try { localStorage.setItem('showRelativeMinor', relMinorToggle.checked ? '1' : '0'); } catch {}
+              updateCurrentKeyUI();
+          });
+      }
     /* =========================
        AlphaTab events
        ========================= */
@@ -1283,6 +1448,7 @@ if (btnNextNote) btnNextNote.onclick = () => {
       try { applyLoopUI(loadLoopPref()); } catch(_) {}
       // Re-apply metronome to be safe after player ready
       try { api.metronomeVolume = parseFloat(localStorage.getItem('metroVol') || '0') || 0; } catch {}
+      if (!STATE.baseBpm || STATE.baseBpm <= 0) STATE.baseBpm = STATE.currentBpm;
     });
 
     // tick cache warm
@@ -1349,7 +1515,10 @@ if (btnNextNote) btnNextNote.onclick = () => {
       if (STATE.USE_INLINE_COLORING) colorScoreByPitch(api.score);
       setHighlightColor(getStaticHlHex());
       setBuiltinHighlighting(hlAssist.checked);
+        try { setScoreKeyFromDropdown(); } catch {}
+        updateCurrentKeyUI();
       if (!tempoSlider.dataset.touched) { tempoSlider.value = STATE.currentBpm; tempoVal.textContent = STATE.currentBpm; }
+      if (!tempoSlider.dataset.touched) { STATE.baseBpm = STATE.currentBpm; }
       try {
         const s = api.settings?.display || {};
         if (Number.isFinite(s.effectStaffPaddingBottom)) { chordSpace.value = String(s.effectStaffPaddingBottom); chordVal.textContent = s.effectStaffPaddingBottom + 'px'; }
@@ -1390,8 +1559,38 @@ function highlightNoteAt(idx) {
   if (highlightNotesList.length === 0) return;
   highlightedNoteIdx = ((idx % highlightNotesList.length) + highlightNotesList.length) % highlightNotesList.length;
   const { note, beat } = highlightNotesList[highlightedNoteIdx];
-  if (!note) return;
-  accentBeat(beat); // Use your existing accentBeat logic for full highlight
+  if (!note || !beat) return;
+
+  // 1) Visual accent (unchanged)
+  accentBeat(beat);
+
+  // 2) Move playhead to this beat without stopping playback
+  try {
+    // Prefer exact conversion via tick cache if available
+    const tc = api.tickCache ?? api.boundsLookup ?? null;
+    let targetTick = null;
+    if (typeof beat.timer === 'number') {
+      if (tc && typeof tc.timeToTick === 'function') {
+        targetTick = tc.timeToTick(Math.max(0, beat.timer));
+      } else {
+        // Fallback: estimate ticks from ms using total duration ratios
+        const durMs = api?.player?.endTime ?? api?.score?.playTime ?? null;
+        const durTicks = api?.score?.duration ?? null;
+        if (durMs && durTicks) targetTick = Math.round((beat.timer / durMs) * durTicks);
+      }
+    }
+    if (typeof targetTick === 'number' && isFinite(targetTick)) {
+      const wasPlaying = api?.player?.state === alphaTab.synth.PlayerState.Playing;
+      api.tickPosition = Math.max(0, targetTick);
+      try { api.scrollToCursor(); } catch {}
+      // preserve prior state (do not force play/pause changes)
+      if (wasPlaying) {
+        // nudge the renderer so the colored accent stays in sync
+        try { api.render(); } catch {}
+      }
+    }
+  } catch {}
+
   try { api.render(); } catch {}
 }
 
@@ -1497,6 +1696,8 @@ function highlightNoteAt(idx) {
         applyLayoutMode(v);
       });
     }
+    window.addEventListener('resize', updateLoopMasks);
+    if (notationWrap) notationWrap.addEventListener('scroll', updateLoopMasks, { passive: true });
 
     // Use the wrapper as the scroll container so the notation area scrolls
     try {
@@ -1513,8 +1714,11 @@ function highlightNoteAt(idx) {
       document.fonts.load("16px 'MuseJazzText'"),
       document.fonts.load("16px 'MuseJazz'")
     ]).catch(() => {}).finally(() => {
+      // Ensure compKey has a value before first render; default to 'C' if empty
+     if (compKey && !compKey.value) compKey.value = 'C';
       renderScoreWithBpm(STATE.currentBpm);
       setHighlightColor(getStaticHlHex());
+      updateCurrentKeyUI();
     });
   })();
   </script>
