@@ -3,25 +3,26 @@
 <head>
   <meta charset="utf-8" />
   <title>AlphaTab — AlphaTex + Player + Cursor (Integrated)</title>
-  <!-- AlphaTab library (keep your local build path) -->
-  <script src="./AlphaTabLib//dist/alphaTab.js"></script>
+  <!-- AlphaTab library (web-hosted path) -->
+  <script src="https://teairis.github.io/AlphaTabLib/dist/alphaTab.js"></script>
 
   <style>
     /* ===== styles.css (inlined) ===== */
     /* Handwritten jazz fonts */
-    @font-face { font-family: 'MuseJazz'; src: url('fonts/musejazz/MuseJazz.otf') format('opentype'); font-display: swap; }
-    @font-face { font-family: 'MuseJazzText'; src: url('fonts/musejazz/MuseJazzText.otf') format('opentype'); font-display: swap; }
+    @font-face { font-family: 'MuseJazz'; src: url('https://teairis.github.io/fonts/musejazz/MuseJazz.otf') format('opentype'); font-display: swap; }
+    @font-face { font-family: 'MuseJazzText'; src: url('https://teairis.github.io/fonts/musejazz/MuseJazzText.otf') format('opentype'); font-display: swap; }
 
     body { margin: 0; font-family: 'MuseJazzText', system-ui, Arial, sans-serif; }
     /* === Theme Variables === */
     :root {
+      --page-bg-opacity: 1;
       /* === Theme === */
       --ui-fg: #111;
       --ui-bg: #fff;
 
       /* === Cursor (vertical playhead) === */
       --cursor-color: rgba(255,150,0,.8);   /* retain your current value */
-      --cursor-alpha: .2;                    /* separate opacity for cursor visuals */
+      --cursor-alpha: .3;                    /* separate opacity for cursor visuals */
       --cursor-width: 1000px;                   /* slim playhead width */
       --cursor-glow: 100px;                  /* retain current glow */
       --cursor-offset-x: -5px;              /* new: nudge cursor left (negative = left, positive = right) */
@@ -174,7 +175,10 @@
     #sheet .at-cursor, #sheet .at-cursor-beat, #sheet .at-cursor-bar { position: relative; z-index: 5; }
 
     /* Light/Dark */
-    body { background: var(--ui-bg); color: var(--ui-fg); }
+    body {
+      background: color-mix(in srgb, var(--ui-bg) calc(var(--page-bg-opacity) * 100%), transparent);
+      color: var(--ui-fg);
+    }
     .controls, .controls label, .controls span, .controls button { color: inherit; }
 
     body.dark #sheet { background: transparent; }
@@ -190,10 +194,24 @@
     .composer input[type="number"],
     .composer select { padding:4px 6px; }
     .composer button { padding:6px 10px; }
+
+    #toggleUi {
+      padding:4px 8px;
+      border-radius: var(--radius-sm);
+      background: rgba(0,0,0,0.05);
+      border: 1px solid rgba(0,0,0,0.2);
+      cursor: pointer;
+    }
+    body.dark #toggleUi {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: #fff;
+    }
   </style>
 </head>
 <body>
   <div id="notationWrap">
+      <button id="toggleUi" style="position:absolute;top:6px;right:6px;z-index:10;">Hide UI</button>
       <div id="sheet" tabindex="0" aria-label="Score area (use ←/→ to move note focus)"></div>
     <div class="notation-divider" aria-hidden="true"></div>
     <div class="notation-resizer" title="Drag to resize notation height" aria-hidden="true"></div>
@@ -340,13 +358,17 @@
   </div>
 
   <script>
+  function setPageBackgroundOpacity(opacity) {
+    const clamped = Math.max(0, Math.min(1, opacity));
+    document.documentElement.style.setProperty('--page-bg-opacity', clamped);
+  }
   (() => {
     /* =========================
        GLOBALS (config + state)
        ========================= */
     const CONFIG = {
-      SOUNDFONT_URL: "./AlphaTabLib//dist/soundfont/mallets.sf2",
-      SOUNDFONT_CDN: "./AlphaTabLib//dist/soundfont/.sf2",
+      SOUNDFONT_URL: "https://teairis.github.io/AlphaTabLib/dist/soundfont/mallets.sf2",
+      SOUNDFONT_CDN: "https://teairis.github.io/AlphaTabLib/dist/soundfont/sonivox.sf2",
       DEFAULT_BPM: 110
     };
 
@@ -1031,7 +1053,13 @@ if (btnNextNote) btnNextNote.onclick = () => {
     api.playerStateChanged.on(e => {
       const playing = e.state === alphaTab.synth.PlayerState.Playing;
       document.getElementById('play').textContent = playing ? 'Pause' : 'Play';
-      if (playing && loopEnabled && loopStartTick != null) { ensureSeekToLoopStart(); }
+      // Only force a seek when resuming at/after the loop end window; otherwise keep the paused position
+      if (playing && loopEnabled && loopStartTick != null) {
+        const ct = currentTick();
+        if (typeof ct === 'number' && loopEndTick != null && ct >= (loopEndTick - LOOP_SEEK_EARLY_TICKS)) {
+          ensureSeekToLoopStart();
+        }
+      }
       updateDebug('(state)');
     });
 
@@ -1459,7 +1487,12 @@ if (btnNextNote) btnNextNote.onclick = () => {
       const playing = e.state === alphaTab.synth.PlayerState.Playing;
       btnPlay.textContent = playing ? 'Pause' : 'Play';
       if (playing) {
-        if (STATE.customLoopEnabled && STATE.loopStartTick != null) ensureSeekToLoopStart();
+        if (STATE.customLoopEnabled && STATE.loopStartTick != null) {
+          const ct = currentTick();
+          if (typeof ct === 'number' && STATE.loopEndTick != null && ct >= (STATE.loopEndTick - (STATE.LOOP_SEEK_EARLY_TICKS || 0))) {
+            ensureSeekToLoopStart();
+          }
+        }
         if (STATE.tickCacheReady) {
           STATE.tickHint = null;
           accentAtCurrentTick();
@@ -1490,6 +1523,21 @@ if (btnNextNote) btnNextNote.onclick = () => {
       if (!res) return; STATE.tickHint = res;
       const beat = res.beat; if (!beat) return;
       const scoreBeat = (beat.notes ? beat : findBeatInScore(api.score, beat)) || beat;
+
+      // Fast path: update Loop Selection Assist color every position tick
+      if (hlAssist && hlAssist.checked && scoreBeat) {
+        try {
+          let top = null;
+          for (const n of scoreBeat.notes || []) {
+            if (typeof n.realValue === 'number' && (top === null || n.realValue > top)) top = n.realValue;
+          }
+          if (top != null) {
+            const semi = (typeof STATE?.transposeSemis === 'number') ? STATE.transposeSemis : 0;
+            setHighlightColor(pcColor(top + semi)); // updates --hl-color (no render needed)
+          }
+        } catch {}
+      }
+
       if (STATE.lastBeatAccented === scoreBeat) return;
       if (STATE.lastBeatAccented) recolorBeat(STATE.lastBeatAccented);
       accentBeat(scoreBeat);
@@ -1721,4 +1769,17 @@ function highlightNoteAt(idx) {
       updateCurrentKeyUI();
     });
   })();
+  // Toggle UI visibility logic
+  const toggleUiBtn = document.getElementById('toggleUi');
+  const controls = document.querySelector('.controls');
+  const composer = document.querySelector('.composer');
+  let uiVisible = true;
+  if (toggleUiBtn) {
+    toggleUiBtn.addEventListener('click', () => {
+      uiVisible = !uiVisible;
+      if (controls) controls.style.display = uiVisible ? '' : 'none';
+      if (composer) composer.style.display = uiVisible ? '' : 'none';
+      toggleUiBtn.textContent = uiVisible ? 'Hide UI' : 'Show UI';
+    });
+  }
   </script>
