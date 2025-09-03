@@ -1,244 +1,262 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>AlphaTab — AlphaTex + Player + Cursor (Integrated)</title>
-  <!-- AlphaTab library (keep your local build path) -->
-  <script src="./AlphaTabLib//dist/alphaTab.js"></script>
+    <meta charset="utf-8" />
+    <title>AlphaTab — AlphaTex + Player + Cursor (Integrated)</title>
+    <!-- AlphaTab library (web-hosted path) -->
+    <script src="https://teairis.github.io/AlphaTabLib/dist/alphaTab.js"></script>
 
-  <style>
-    /* ===== styles.css (inlined) ===== */
-    /* Handwritten jazz fonts */
-    @font-face { font-family: 'MuseJazz'; src: url('fonts/musejazz/MuseJazz.otf') format('opentype'); font-display: swap; }
-    @font-face { font-family: 'MuseJazzText'; src: url('fonts/musejazz/MuseJazzText.otf') format('opentype'); font-display: swap; }
+    <style>
+        /* ===== styles.css (inlined) ===== */
+        /* Handwritten jazz fonts */
+        @font-face { font-family: 'MuseJazz'; src: url('https://teairis.github.io/fonts/musejazz/MuseJazz.otf') format('opentype'); font-display: swap; }
+        @font-face { font-family: 'MuseJazzText'; src: url('https://teairis.github.io/fonts/musejazz/MuseJazzText.otf') format('opentype'); font-display: swap; }
 
-    body { margin: 0; font-family: 'MuseJazzText', system-ui, Arial, sans-serif; }
-    /* === Theme Variables === */
-    :root {
-      /* === Theme === */
-      --ui-fg: #111;
-      --ui-bg: #fff;
+        body { margin: 0; font-family: 'MuseJazzText', system-ui, Arial, sans-serif; }
+        /* === Theme Variables === */
+        :root {
+            --page-bg-opacity: 1;
+            /* === Theme === */
+            --ui-fg: #111;
+            --ui-bg: #fff;
 
-      /* === Cursor (vertical playhead) === */
-      --cursor-color: rgba(255,150,0,.8);   /* retain your current value */
-      --cursor-alpha: .2;                    /* separate opacity for cursor visuals */
-      --cursor-width: 1000px;                   /* slim playhead width */
-      --cursor-glow: 100px;                  /* retain current glow */
-      --cursor-offset-x: -5px;              /* new: nudge cursor left (negative = left, positive = right) */
+            /* === Cursor (vertical playhead) === */
+            --cursor-color: rgba(255,150,0,.8);   /* retain your current value */
+            --cursor-alpha: .3;                    /* separate opacity for cursor visuals */
+            --cursor-width: 1000px;                   /* slim playhead width */
+            --cursor-glow: 100px;                  /* retain current glow */
+            --cursor-offset-x: -5px;              /* new: nudge cursor left (negative = left, positive = right) */
 
-      /* === Bar highlight (current bar overlay) === */
-      --bar-highlight-color: rgba(86,199,222,0);
+            /* === Bar highlight (current bar overlay) === */
+            --bar-highlight-color: rgba(86,199,222,0);
 
-      /* === Loop selection guide lines === */
-      --loop-line-color: var(--hl-color, rgba(64,64,255,0.1));
-      --loop-line-glow: 6px;          /* retain your current */
-      --loop-line-offset: 40px;       /* retain your current */
-      --loop-line-thickness: 4px;     /* retain your current */
-      /* === Loop mask (dim areas outside loop) === */
-      --loop-mask-color: rgba(0,0,0,0.08);
+            /* === Loop selection guide lines === */
+            --loop-line-color: var(--hl-color, rgba(64,64,255,0.1));
+            --loop-line-glow: 6px;          /* retain your current */
+            --loop-line-offset: 40px;       /* retain your current */
+            --loop-line-thickness: 4px;     /* retain your current */
+            /* === Loop mask (dim areas outside loop) === */
+            --loop-mask-color: rgba(0,0,0,0.08);
 
-      /* === Notation divider === */
-      --notation-divider-color-light: rgba(0,0,0,0.12);
-      --notation-divider-color-dark:  rgba(255,255,255,0.18);
+            /* === Notation divider === */
+            --notation-divider-color-light: rgba(0,0,0,0.12);
+            --notation-divider-color-dark:  rgba(255,255,255,0.18);
 
-      /* === Notation resizer (drag handle) === */
-      --resizer-height: 12px;
-      --resizer-line-color-light: rgba(0,0,0,0.18);
-      --resizer-line-color-dark:  rgba(255,255,255,0.28);
-      --resizer-mark-color-light: rgba(0,0,0,0.45);
-      --resizer-mark-color-dark:  rgba(255,255,255,0.6);
+            /* === Notation resizer (drag handle) === */
+            --resizer-height: 12px;
+            --resizer-line-color-light: rgba(0,0,0,0.18);
+            --resizer-line-color-dark:  rgba(255,255,255,0.28);
+            --resizer-mark-color-light: rgba(0,0,0,0.45);
+            --resizer-mark-color-dark:  rgba(255,255,255,0.6);
 
-      /* === Note/assist highlight === */
-      --hl-color: rgba(64,64,255,0.6); /* starter value; JS may override at runtime */
-        /* === Radii & glow tuning === */
-        --radius-sm: 4px;
-        --radius-md: 8px;
-        --radius-lg: 12px;
-        --cursor-glow-outer: 22px; /* additional outer glow size */
-    }
-    body.dark {
-      --ui-fg: #fff;
-      --ui-bg: #000;
-      --cursor-color: rgba(0,100,255,.8);   /* retain your current dark value */
-      --loop-mask-color: rgba(255,255,255,0.10);
-    }
+            /* === Note/assist highlight === */
+            --hl-color: rgba(64,64,255,0.6); /* starter value; JS may override at runtime */
+            /* === Radii & glow tuning === */
+            --radius-sm: 4px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --cursor-glow-outer: 22px; /* additional outer glow size */
+        }
+        body.dark {
+            --ui-fg: #fff;
+            --ui-bg: #000;
+            --cursor-color: rgba(0,100,255,.8);   /* retain your current dark value */
+            --loop-mask-color: rgba(255,255,255,0.10);
+        }
 
-    /* Notation wrapper controls size; #sheet fills it */
-    #notationWrap { position: relative; width: 100%; height: 80vh; display: block; overflow: auto; border-radius: var(--radius-lg); }
-    #sheet { width: 100%; height: 100%; position: relative; isolation: isolate; }
+        /* Notation wrapper controls size; #sheet fills it */
+        #notationWrap { position: relative; width: 100%; height: 80vh; display: block; overflow: auto; border-radius: var(--radius-lg); }
+        #sheet { width: 100%; height: 100%; position: relative; isolation: isolate; }
 
-    /* Divider at the bottom of the notation area (above the UI below) */
-    .notation-divider{ position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--notation-divider-color-light); pointer-events: none; }
-    body.dark .notation-divider{ background: var(--notation-divider-color-dark); }
-    /* Draggable resize bar at bottom of notation area */
-    .notation-resizer{
-      position: sticky; /* stays at bottom edge while scrolling */
-      left: 0; right: 0; bottom: 0;
-      height: var(--resizer-height);
-      background: linear-gradient(to bottom,
-        transparent 0,
-        transparent calc(var(--resizer-height) - 4px),
-        var(--resizer-line-color-light) calc(var(--resizer-height) - 4px),
-        var(--resizer-line-color-light) calc(var(--resizer-height) - 3px),
-        transparent calc(var(--resizer-height) - 3px)
-      );
-      cursor: ns-resize;
-      z-index: 3;
-    }
-    .notation-resizer::after{
-      content: '↕';
-      position: absolute;
-      left: 50%; top: 0;
-      transform: translate(-50%, 0);
-      font-family: 'MuseJazzText', system-ui, sans-serif;
-      font-size: 12px; line-height: 12px;
-      color: var(--resizer-mark-color-light);
-      pointer-events: none;
-    }
-    body.dark .notation-resizer{
-      background: linear-gradient(to bottom,
-        transparent 0,
-        transparent calc(var(--resizer-height) - 4px),
-        var(--resizer-line-color-dark) calc(var(--resizer-height) - 4px),
-        var(--resizer-line-color-dark) calc(var(--resizer-height) - 3px),
-        transparent calc(var(--resizer-height) - 3px)
-      );
-    }
-    body.dark .notation-resizer::after{ color: var(--resizer-mark-color-dark); }
-    .notation-resizer:hover{ filter: brightness(1.05); }
-    .controls { display:flex; gap:8px; align-items:center; padding:10px; border-top:1px solid #ddd; flex-wrap: wrap; }
-    .controls button { padding:6px 10px; border-radius: var(--radius-md); }
-    .controls input, .controls select { border-radius: var(--radius-sm); }
-    .controls .at-loop.active { background: rgba(0,128,0,0.15); border:1px solid rgba(0,128,0,0.35); }
-    .spacer { flex:1; }
+        /* Divider at the bottom of the notation area (above the UI below) */
+        .notation-divider{ position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--notation-divider-color-light); pointer-events: none; }
+        body.dark .notation-divider{ background: var(--notation-divider-color-dark); }
+        /* Draggable resize bar at bottom of notation area */
+        .notation-resizer{
+            position: sticky; /* stays at bottom edge while scrolling */
+            left: 0; right: 0; bottom: 0;
+            height: var(--resizer-height);
+            background: linear-gradient(to bottom,
+            transparent 0,
+            transparent calc(var(--resizer-height) - 4px),
+            var(--resizer-line-color-light) calc(var(--resizer-height) - 4px),
+            var(--resizer-line-color-light) calc(var(--resizer-height) - 3px),
+            transparent calc(var(--resizer-height) - 3px)
+            );
+            cursor: ns-resize;
+            z-index: 3;
+        }
+        .notation-resizer::after{
+            content: '↕';
+            position: absolute;
+            left: 50%; top: 0;
+            transform: translate(-50%, 0);
+            font-family: 'MuseJazzText', system-ui, sans-serif;
+            font-size: 12px; line-height: 12px;
+            color: var(--resizer-mark-color-light);
+            pointer-events: none;
+        }
+        body.dark .notation-resizer{
+            background: linear-gradient(to bottom,
+            transparent 0,
+            transparent calc(var(--resizer-height) - 4px),
+            var(--resizer-line-color-dark) calc(var(--resizer-height) - 4px),
+            var(--resizer-line-color-dark) calc(var(--resizer-height) - 3px),
+            transparent calc(var(--resizer-height) - 3px)
+            );
+        }
+        body.dark .notation-resizer::after{ color: var(--resizer-mark-color-dark); }
+        .notation-resizer:hover{ filter: brightness(1.05); }
+        .controls { display:flex; gap:8px; align-items:center; padding:10px; border-top:1px solid #ddd; flex-wrap: wrap; }
+        .controls button { padding:6px 10px; border-radius: var(--radius-md); }
+        .controls input, .controls select { border-radius: var(--radius-sm); }
+        .controls .at-loop.active { background: rgba(0,128,0,0.15); border:1px solid rgba(0,128,0,0.35); }
+        .spacer { flex:1; }
 
-    /* Cursors / overlays */
-    .at-cursor-bar { background: var(--bar-highlight-color); }
-    .at-selection div{
-      background: transparent !important;
-      border: none !important; /* remove in-staff borders that intersect notes */
-      position: relative;      /* enable pseudo-elements positioning */
-      box-sizing: border-box;
-      pointer-events: none;
-      overflow: visible;       /* allow guide lines to extend outside */
-    }
+        /* Cursors / overlays */
+        .at-cursor-bar { background: var(--bar-highlight-color); }
+        .at-selection div{
+            background: transparent !important;
+            border: none !important; /* remove in-staff borders that intersect notes */
+            position: relative;      /* enable pseudo-elements positioning */
+            box-sizing: border-box;
+            pointer-events: none;
+            overflow: visible;       /* allow guide lines to extend outside */
+        }
 
-    /* Ensure overlay can show the extended guide lines */
-    #sheet .at-overlay { overflow: hidden; }
+        /* Ensure overlay can show the extended guide lines */
+        #sheet .at-overlay { overflow: hidden; }
 
-    /* Loop guides rendered well above and below the staff */
-    .at-selection div::before,
-    .at-selection div::after{
-      content: '';
-      position: absolute;
-      left: 0; right: 0;            /* clamp to the selection box */
-      height: var(--loop-line-thickness);
-      background: var(--loop-line-color);
-      box-shadow: 0 0 8px rgba(0,0,0,0.1), 0 0 var(--loop-line-glow) currentColor;
-      pointer-events: none;
-    }
-    .at-selection div::before{ top: calc(-1 * var(--loop-line-offset)); }
-    .at-selection div::after{  bottom: calc(-1 * var(--loop-line-offset)); }
+        /* Loop guides rendered well above and below the staff */
+        .at-selection div::before,
+        .at-selection div::after{
+            content: '';
+            position: absolute;
+            left: 0; right: 0;            /* clamp to the selection box */
+            height: var(--loop-line-thickness);
+            background: var(--loop-line-color);
+            box-shadow: 0 0 8px rgba(0,0,0,0.1), 0 0 var(--loop-line-glow) currentColor;
+            pointer-events: none;
+        }
+        .at-selection div::before{ top: calc(-1 * var(--loop-line-offset)); }
+        .at-selection div::after{  bottom: calc(-1 * var(--loop-line-offset)); }
 
-    .at-cursor, .at-cursor-beat {
-      background: rgb(from var(--cursor-color) r g b / var(--cursor-alpha)) !important;
-      width: var(--cursor-width) !important;
-      box-shadow: 0 0 var(--cursor-glow) rgb(from var(--cursor-color) r g b / var(--cursor-alpha)); /* remove white edge to avoid top/bottom caps */
-      translate: var(--cursor-offset-x) 0; /* uses individual transform property so it COMBINES with AlphaTab's inline transform */
-      border-radius: var(--radius-md);
-      overflow: hidden; /* clip fill to rounded corners */
-      outline: none;
-      background-clip: padding-box; /* prevent any subtle edge halos */
-      pointer-events: none;
-    }
+        .at-cursor, .at-cursor-beat {
+            background: rgb(from var(--cursor-color) r g b / var(--cursor-alpha)) !important;
+            width: var(--cursor-width) !important;
+            box-shadow: 0 0 var(--cursor-glow) rgb(from var(--cursor-color) r g b / var(--cursor-alpha)); /* remove white edge to avoid top/bottom caps */
+            translate: var(--cursor-offset-x) 0; /* uses individual transform property so it COMBINES with AlphaTab's inline transform */
+            border-radius: var(--radius-md);
+            overflow: hidden; /* clip fill to rounded corners */
+            outline: none;
+            background-clip: padding-box; /* prevent any subtle edge halos */
+            pointer-events: none;
+        }
 
-    /* Bar overlay should NOT use the pink cursor color/glow */
-    .at-cursor-bar {
-      background: var(--bar-highlight-color) !important;
-      box-shadow: none !important;
-      width: auto; /* let AlphaTab size the bar */
-      translate: var(--cursor-offset-x) 0; /* additive; won’t override AlphaTab's transform */
-      border-radius: var(--radius-sm);
-      pointer-events: none;
-    }
-    .at-highlight * { fill: var(--hl-color, currentColor); stroke: var(--hl-color, currentColor); }
+        /* Bar overlay should NOT use the pink cursor color/glow */
+        .at-cursor-bar {
+            background: var(--bar-highlight-color) !important;
+            box-shadow: none !important;
+            width: auto; /* let AlphaTab size the bar */
+            translate: var(--cursor-offset-x) 0; /* additive; won’t override AlphaTab's transform */
+            border-radius: var(--radius-sm);
+            pointer-events: none;
+        }
+        .at-highlight * { fill: var(--hl-color, currentColor); stroke: var(--hl-color, currentColor); }
 
-    /* Layer order: notation (0) < selection (1) < overlay (2) < cursors (5) */
-    #sheet .at-viewport, #sheet .at-viewport svg, #sheet svg { position: relative; z-index: 0; }
-    #sheet .at-selection { position: relative; z-index: 1; }
-    #sheet .at-overlay  { position: relative; z-index: 2; }
-    /* Loop mask strips (left/right) dim non-loop areas */
-    #sheet .loop-mask{ position:absolute; top:0; bottom:0; background: var(--loop-mask-color); pointer-events:none; z-index: 3; }
-    #sheet .loop-mask.left{ left:0; }
-    #sheet .loop-mask.right{ right:0; }
-    #sheet .at-cursor, #sheet .at-cursor-beat, #sheet .at-cursor-bar { position: relative; z-index: 5; }
+        /* Layer order: notation (0) < selection (1) < overlay (2) < cursors (5) */
+        #sheet .at-viewport, #sheet .at-viewport svg, #sheet svg { position: relative; z-index: 0; }
+        #sheet .at-selection { position: relative; z-index: 1; }
+        #sheet .at-overlay  { position: relative; z-index: 2; }
+        /* Loop mask strips (left/right) dim non-loop areas */
+        #sheet .loop-mask{ position:absolute; top:0; bottom:0; background: var(--loop-mask-color); pointer-events:none; z-index: 3; }
+        #sheet .loop-mask.left{ left:0; }
+        #sheet .loop-mask.right{ right:0; }
+        #sheet .at-cursor, #sheet .at-cursor-beat, #sheet .at-cursor-bar { position: relative; z-index: 5; }
 
-    /* Light/Dark */
-    body { background: var(--ui-bg); color: var(--ui-fg); }
-    .controls, .controls label, .controls span, .controls button { color: inherit; }
+        /* Light/Dark */
+        body {
+            background: color-mix(in srgb, var(--ui-bg) calc(var(--page-bg-opacity) * 100%), transparent);
+            color: var(--ui-fg);
+        }
+        .controls, .controls label, .controls span, .controls button { color: inherit; }
 
-    body.dark #sheet { background: transparent; }
-    body.dark #sheet svg { background: transparent !important; color:#000 !important; }
-    body.dark #sheet svg rect[fill="#ffffff"], body.dark #sheet svg rect[fill="#fff"], body.dark #sheet svg rect[fill="white"] { fill: transparent !important; }
-    body.dark .controls button { background: rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.25); }
-    body.dark input[type="range"]::-webkit-slider-thumb,
-    body.dark input[type="range"]::-moz-range-thumb { background:#fff; }
+        body.dark #sheet { background: transparent; }
+        body.dark #sheet svg { background: transparent !important; color:#000 !important; }
+        body.dark #sheet svg rect[fill="#ffffff"], body.dark #sheet svg rect[fill="#fff"], body.dark #sheet svg rect[fill="white"] { fill: transparent !important; }
+        body.dark .controls button { background: rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.25); }
+        body.dark input[type="range"]::-webkit-slider-thumb,
+        body.dark input[type="range"]::-moz-range-thumb { background:#fff; }
 
-    /* Composer tweaks */
-    .composer label { font-size: 13px; }
-    .composer input[type="text"],
-    .composer input[type="number"],
-    .composer select { padding:4px 6px; }
-    .composer button { padding:6px 10px; }
-  </style>
+        /* Composer tweaks */
+        .composer label { font-size: 13px; }
+        .composer input[type="text"],
+        .composer input[type="number"],
+        .composer select { padding:4px 6px; }
+        .composer button { padding:6px 10px; }
+
+        #toggleUi {
+            padding:4px 8px;
+            border-radius: var(--radius-sm);
+            background: rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.2);
+            cursor: pointer;
+        }
+        body.dark #toggleUi {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.25);
+            color: #fff;
+        }
+    </style>
 </head>
 <body>
-  <div id="notationWrap">
-      <div id="sheet" tabindex="0" aria-label="Score area (use ←/→ to move note focus)"></div>
+<div id="notationWrap">
+    <button id="toggleUi" style="position:absolute;top:6px;right:6px;z-index:10;">Hide UI</button>
+    <div id="sheet" tabindex="0" aria-label="Score area (use ←/→ to move note focus)"></div>
     <div class="notation-divider" aria-hidden="true"></div>
     <div class="notation-resizer" title="Drag to resize notation height" aria-hidden="true"></div>
-  </div>
+</div>
 
-  <!-- Composer: Smart AlphaTex fields (Title, Tempo, Key, Body) -->
-  <div class="composer" style="padding:10px; border-top:1px solid #ddd; display:flex; flex-direction:column; gap:8px;">
+<!-- Composer: Smart AlphaTex fields (Title, Tempo, Key, Body) -->
+<div class="composer" style="padding:10px; border-top:1px solid #ddd; display:flex; flex-direction:column; gap:8px;">
     <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-      <label>Title:
-        <input id="compTitle" type="text" placeholder="Untitled" style="min-width:240px;">
-      </label>
-      <label>Tempo:
-        <input id="compTempo" type="number" min="40" max="280" step="1" value="110" style="width:80px;">
-      </label>
-      <label>Key:
-        <select id="compKey" title="Key signature">
-          <option value="">(none)</option>
-          <option value="C">C major</option>
-          <option value="G">G major</option>
-          <option value="D">D major</option>
-          <option value="A">A major</option>
-          <option value="E">E major</option>
-          <option value="B">B major</option>
-          <option value="F#">F# major</option>
-          <option value="C#">C# major</option>
-          <option value="F">F major</option>
-          <option value="Bb">Bb major</option>
-          <option value="Eb">Eb major</option>
-          <option value="Ab">Ab major</option>
-          <option value="Db">Db major</option>
-          <option value="Gb">Gb major</option>
-          <option value="Cb">Cb major</option>
-        </select>
-      </label>
-      <button id="compApply" title="Render the score from the fields">Apply Score</button>
-      <label style="display:flex; align-items:center; gap:6px;">
-        <input id="compAuto" type="checkbox"> Auto-apply
-      </label>
+        <label>Title:
+            <input id="compTitle" type="text" placeholder="Untitled" style="min-width:240px;">
+        </label>
+        <label>Tempo:
+            <input id="compTempo" type="number" min="40" max="280" step="1" value="110" style="width:80px;">
+        </label>
+        <label>Key:
+            <select id="compKey" title="Key signature">
+                <option value="">(none)</option>
+                <option value="C">C major</option>
+                <option value="G">G major</option>
+                <option value="D">D major</option>
+                <option value="A">A major</option>
+                <option value="E">E major</option>
+                <option value="B">B major</option>
+                <option value="F#">F# major</option>
+                <option value="C#">C# major</option>
+                <option value="F">F major</option>
+                <option value="Bb">Bb major</option>
+                <option value="Eb">Eb major</option>
+                <option value="Ab">Ab major</option>
+                <option value="Db">Db major</option>
+                <option value="Gb">Gb major</option>
+                <option value="Cb">Cb major</option>
+            </select>
+        </label>
+        <button id="compApply" title="Render the score from the fields">Apply Score</button>
+        <label style="display:flex; align-items:center; gap:6px;">
+            <input id="compAuto" type="checkbox"> Auto-apply
+        </label>
     </div>
     <label style="display:block;">Score (AlphaTex body only):
-      <textarea id="compBody" rows="5" spellcheck="false" style="width:100%; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:13px; padding:8px; resize:vertical;" placeholder=":4 C4 D4 E4 F4 | G4 A4 B4 C5"></textarea>
+        <textarea id="compBody" rows="5" spellcheck="false" style="width:100%; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:13px; padding:8px; resize:vertical;" placeholder=":4 C4 D4 E4 F4 | G4 A4 B4 C5"></textarea>
     </label>
-  </div>
+</div>
 
-  <div class="controls">
+<div class="controls">
     <!-- transport -->
     <span style="margin-left:12px;">Layout:
       <select id="layoutMode" title="Score layout mode">
@@ -254,8 +272,8 @@
     <span id="status">Loading soundfont… 0%</span>
     &nbsp; SoundFont:
     <select id="sfSelect" title="Choose SoundFont">
-      <option value="local" selected>Local (Mallets_GM.sf2)</option>
-      <option value="cdn">CDN Sonivox</option>
+        <option value="local" selected>Local (Mallets_GM.sf2)</option>
+        <option value="cdn">CDN Sonivox</option>
     </select>
     &nbsp; Metronome:
     <label><input id="metroToggle" type="checkbox"> Enable</label>
@@ -272,25 +290,25 @@
 
     <!-- tempo + layout/opacity -->
     <label>Tempo:
-      <input id="tempo" type="range" min="40" max="220" value="110" style="width:120px;">
-      <span id="tempoVal">110</span> BPM
+        <input id="tempo" type="range" min="40" max="220" value="110" style="width:120px;">
+        <span id="tempoVal">110</span> BPM
     </label>
     <label>Note Opacity:
-      <input id="opacity" type="range" min="0" max="1" step="0.05" value="0.05" style="width:90px;">
-      <span id="opacityVal">0.05</span>
+        <input id="opacity" type="range" min="0" max="1" step="0.05" value="0.05" style="width:90px;">
+        <span id="opacityVal">0.05</span>
     </label>
     <label>Chord Spacing (top):
-      <input id="chordSpace" type="range" min="0" max="30" step="1" value="12" style="width:110px;">
-      <span id="chordVal">12px</span>
+        <input id="chordSpace" type="range" min="0" max="30" step="1" value="12" style="width:110px;">
+        <span id="chordVal">12px</span>
     </label>
     <label>Dynamics Spacing (bottom):
-      <input id="dynSpace" type="range" min="0" max="30" step="1" value="16" style="width:110px;">
-      <span id="dynVal">16px</span>
+        <input id="dynSpace" type="range" min="0" max="30" step="1" value="16" style="width:110px;">
+        <span id="dynVal">16px</span>
     </label>
 
     <!-- highlight assist + HSV -->
     <label style="margin-left:12px;">
-      <input id="hlAssist" type="checkbox"> Loop Selection Assist
+        <input id="hlAssist" type="checkbox"> Loop Selection Assist
     </label>
     <span class="hsv-controls" style="margin-left:12px;">
       <label title="Hue (0–360)" style="display:inline;">H:
@@ -309,7 +327,7 @@
 
     <!-- theme -->
     <label style="margin-left:12px;">
-      <input id="darkMode" type="checkbox"> Dark mode
+        <input id="darkMode" type="checkbox"> Dark mode
     </label>
 
     <!-- NEW: Transpose/Key controls -->
@@ -320,1405 +338,1448 @@
       <span id="transposeVal">0</span> st
     </span>
     <label title="Update visible key signature when transposing">
-      <input id="keySigToggle" type="checkbox" checked> Key Sig
+        <input id="keySigToggle" type="checkbox" checked> Key Sig
     </label>
     <label title="Prefer flats for enharmonic keys (Db/Gb/Cb); when off uses C#/F#/B">
-      <input id="enhToggle" type="checkbox"> Prefer flats
+        <input id="enhToggle" type="checkbox"> Prefer flats
     </label>
-      <span style="margin-left:12px;">Current Key:
+    <span style="margin-left:12px;">Current Key:
   <strong id="currentKey">—</strong>
 </span>
-      <label title="Show the relative minor instead of the major key name">
-          <input id="relMinorToggle" type="checkbox"> Relative minor
-      </label>
+    <label title="Show the relative minor instead of the major key name">
+        <input id="relMinorToggle" type="checkbox"> Relative minor
+    </label>
 
     <!-- debug -->
     <span id="pos">00:00 / 00:00</span>
     <span id="dbg" style="font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin-left:12px; opacity:0.85;">
       PR: – / – | Loop: – / – | ct: – | seeks: 0
     </span>
-  </div>
+</div>
 
-  <script>
-  (() => {
-    /* =========================
-       GLOBALS (config + state)
-       ========================= */
-    const CONFIG = {
-      SOUNDFONT_URL: "./AlphaTabLib//dist/soundfont/mallets.sf2",
-      SOUNDFONT_CDN: "./AlphaTabLib//dist/soundfont/.sf2",
-      DEFAULT_BPM: 110
-    };
-
-
-    //Next/Previous Note Highlighting
-    let highlightedNoteIdx = -1; // -1 means nothing selected
-    let highlightNotesList = [];
-
-    // Runtime state grouped up-front (C#-style “fields”)
-    const STATE = {
-      api: null,
-
-      // visuals & theme
-      isDark: false,
-      normalNoteDimFactor: 0.05, // 0 = black/white, 1 = full color
-      builtinHighlightOn: false,
-
-      // timing
-      currentBpm: CONFIG.DEFAULT_BPM,
-      baseBpm: CONFIG.DEFAULT_BPM,
-
-      // tick cache / accents
-      tickCacheReady: false,
-      tickHint: null,
-      pendingAccentOnWarm: false,
+<script>
+    function setPageBackgroundOpacity(opacity) {
+        const clamped = Math.max(0, Math.min(1, opacity));
+        document.documentElement.style.setProperty('--page-bg-opacity', clamped);
+    }
+    (() => {
+        /* =========================
+           GLOBALS (config + state)
+           ========================= */
+        const CONFIG = {
+            SOUNDFONT_URL: "https://teairis.github.io/AlphaTabLib/dist/soundfont/mallets.sf2",
+            SOUNDFONT_CDN: "https://teairis.github.io/AlphaTabLib/dist/soundfont/sonivox.sf2",
+            DEFAULT_BPM: 110
+        };
 
 
-      // transpose / keys
-      transposeSemis: parseInt(localStorage.getItem('notationTranspose') || '0', 10) || 0,
-      keySigOn: (localStorage.getItem('keySigToggle') !== '0'),
-      preferFlats: (localStorage.getItem('enhPreferFlats') === '1'),
+        //Next/Previous Note Highlighting
+        let highlightedNoteIdx = -1; // -1 means nothing selected
+        let highlightNotesList = [];
 
-      // last accent
-      lastBeatAccented: null
-    };
+        // Runtime state grouped up-front (C#-style “fields”)
+        const STATE = {
+            api: null,
 
-    /* =========================
-       DOM references
-       ========================= */
-    const container = document.getElementById('sheet');
-    const btnPlay = document.getElementById('play');
-    const btnStop = document.getElementById('stop');
-    const status = document.getElementById('status');
-    const btnLoop = document.getElementById('loop');
-    const tempoSlider = document.getElementById('tempo');
-    const tempoVal = document.getElementById('tempoVal');
-    const pos = document.getElementById('pos');
-    const opacitySlider = document.getElementById('opacity');
-    const opacityVal = document.getElementById('opacityVal');
-    const chordSpace = document.getElementById('chordSpace');
-    const chordVal = document.getElementById('chordVal');
-    const dynSpace = document.getElementById('dynSpace');
-    const dynVal = document.getElementById('dynVal');
-    const hlH = document.getElementById('hlH'), hlHVal = document.getElementById('hlHVal');
-    const hlS = document.getElementById('hlS'), hlSVal = document.getElementById('hlSVal');
-    const hlV = document.getElementById('hlV'), hlVVal = document.getElementById('hlVVal');
-    const darkMode = document.getElementById('darkMode');
-    const hlAssist = document.getElementById('hlAssist');
-    const dbg = document.getElementById('dbg');
+            // visuals & theme
+            isDark: false,
+            normalNoteDimFactor: 0.05, // 0 = black/white, 1 = full color
+            builtinHighlightOn: false,
 
-    // NEW
-    const tDown = document.getElementById('tDown');
-    const tUp = document.getElementById('tUp');
-    const tReset = document.getElementById('tReset');
-    const transposeVal = document.getElementById('transposeVal');
-    const keySigToggle = document.getElementById('keySigToggle');
-    const enhToggle = document.getElementById('enhToggle');
-      const keyDisplay = document.getElementById('currentKey');
-      const relMinorToggle = document.getElementById('relMinorToggle');
+            // timing
+            currentBpm: CONFIG.DEFAULT_BPM,
+            baseBpm: CONFIG.DEFAULT_BPM,
 
-    // SoundFont & Metronome controls
-    const sfSelect = document.getElementById('sfSelect');
-    const metroToggle = document.getElementById('metroToggle');
-    const metroVol = document.getElementById('metroVol');
+            // tick cache / accents
+            tickCacheReady: false,
+            tickHint: null,
+            pendingAccentOnWarm: false,
 
-    // Notation wrapper + resizer
-    const notationWrap = document.getElementById('notationWrap');
-    const notationResizer = document.querySelector('.notation-resizer');
 
-    // Layout mode selector
-    const layoutModeSelect = document.getElementById('layoutMode');
+            // transpose / keys
+            transposeSemis: parseInt(localStorage.getItem('notationTranspose') || '0', 10) || 0,
+            keySigOn: (localStorage.getItem('keySigToggle') !== '0'),
+            preferFlats: (localStorage.getItem('enhPreferFlats') === '1'),
 
-    // Composer DOM
-    const compTitle = document.getElementById('compTitle');
-    const compTempo = document.getElementById('compTempo');
-    const compKey   = document.getElementById('compKey');
-    const compBody  = document.getElementById('compBody');
-    const compApply = document.getElementById('compApply');
-    const compAuto  = document.getElementById('compAuto');
+            // last accent
+            lastBeatAccented: null
+        };
 
-    // Get your buttons
-const btnPrevNote = document.getElementById('prevNote');
-const btnNextNote = document.getElementById('nextNote');
+        /* =========================
+           DOM references
+           ========================= */
+        const container = document.getElementById('sheet');
+        const btnPlay = document.getElementById('play');
+        const btnStop = document.getElementById('stop');
+        const status = document.getElementById('status');
+        const btnLoop = document.getElementById('loop');
+        const tempoSlider = document.getElementById('tempo');
+        const tempoVal = document.getElementById('tempoVal');
+        const pos = document.getElementById('pos');
+        const opacitySlider = document.getElementById('opacity');
+        const opacityVal = document.getElementById('opacityVal');
+        const chordSpace = document.getElementById('chordSpace');
+        const chordVal = document.getElementById('chordVal');
+        const dynSpace = document.getElementById('dynSpace');
+        const dynVal = document.getElementById('dynVal');
+        const hlH = document.getElementById('hlH'), hlHVal = document.getElementById('hlHVal');
+        const hlS = document.getElementById('hlS'), hlSVal = document.getElementById('hlSVal');
+        const hlV = document.getElementById('hlV'), hlVVal = document.getElementById('hlVVal');
+        const darkMode = document.getElementById('darkMode');
+        const hlAssist = document.getElementById('hlAssist');
+        const dbg = document.getElementById('dbg');
 
-/*// Previous Note button handler
-if (btnPrevNote) btnPrevNote.onclick = () => {
-  if (highlightNotesList.length === 0) return;
-  let idx = highlightedNoteIdx <= 0 ? highlightNotesList.length - 1 : highlightedNoteIdx - 1;
-  highlightNoteAt(idx);
-};
+        // NEW
+        const tDown = document.getElementById('tDown');
+        const tUp = document.getElementById('tUp');
+        const tReset = document.getElementById('tReset');
+        const transposeVal = document.getElementById('transposeVal');
+        const keySigToggle = document.getElementById('keySigToggle');
+        const enhToggle = document.getElementById('enhToggle');
+        const keyDisplay = document.getElementById('currentKey');
+        const relMinorToggle = document.getElementById('relMinorToggle');
 
-// Next Note button handler
-if (btnNextNote) btnNextNote.onclick = () => {
-  if (highlightNotesList.length === 0) return;
-  let idx = highlightedNoteIdx < 0 ? 0 : highlightedNoteIdx + 1;
-  if (idx >= highlightNotesList.length) idx = 0;
-  highlightNoteAt(idx);
-};*/
+        // SoundFont & Metronome controls
+        const sfSelect = document.getElementById('sfSelect');
+        const metroToggle = document.getElementById('metroToggle');
+        const metroVol = document.getElementById('metroVol');
 
-      function prevNote(){
+        // Notation wrapper + resizer
+        const notationWrap = document.getElementById('notationWrap');
+        const notationResizer = document.querySelector('.notation-resizer');
+
+        // Layout mode selector
+        const layoutModeSelect = document.getElementById('layoutMode');
+
+        // Composer DOM
+        const compTitle = document.getElementById('compTitle');
+        const compTempo = document.getElementById('compTempo');
+        const compKey   = document.getElementById('compKey');
+        const compBody  = document.getElementById('compBody');
+        const compApply = document.getElementById('compApply');
+        const compAuto  = document.getElementById('compAuto');
+
+        // Get your buttons
+        const btnPrevNote = document.getElementById('prevNote');
+        const btnNextNote = document.getElementById('nextNote');
+
+        /*// Previous Note button handler
+        if (btnPrevNote) btnPrevNote.onclick = () => {
           if (highlightNotesList.length === 0) return;
-          let idx = (highlightedNoteIdx <= 0) ? (highlightNotesList.length - 1) : (highlightedNoteIdx - 1);
+          let idx = highlightedNoteIdx <= 0 ? highlightNotesList.length - 1 : highlightedNoteIdx - 1;
           highlightNoteAt(idx);
-      }
-      function nextNote(){
+        };
+
+        // Next Note button handler
+        if (btnNextNote) btnNextNote.onclick = () => {
           if (highlightNotesList.length === 0) return;
-          let idx = (highlightedNoteIdx < 0) ? 0 : (highlightedNoteIdx + 1);
+          let idx = highlightedNoteIdx < 0 ? 0 : highlightedNoteIdx + 1;
           if (idx >= highlightNotesList.length) idx = 0;
           highlightNoteAt(idx);
-      }
+        };*/
+
+        function prevNote(){
+            if (highlightNotesList.length === 0) return;
+            let idx = (highlightedNoteIdx <= 0) ? (highlightNotesList.length - 1) : (highlightedNoteIdx - 1);
+            highlightNoteAt(idx);
+        }
+        function nextNote(){
+            if (highlightNotesList.length === 0) return;
+            let idx = (highlightedNoteIdx < 0) ? 0 : (highlightedNoteIdx + 1);
+            if (idx >= highlightNotesList.length) idx = 0;
+            highlightNoteAt(idx);
+        }
 // Button hooks
-      if (btnPrevNote) btnPrevNote.onclick = prevNote;
-      if (btnNextNote) btnNextNote.onclick = nextNote;
+        if (btnPrevNote) btnPrevNote.onclick = prevNote;
+        if (btnNextNote) btnNextNote.onclick = nextNote;
 
-      // Keyboard navigation when the score is focused
-      let scoreHasFocus = false;
+        // Keyboard navigation when the score is focused
+        let scoreHasFocus = false;
 
-      if (container) {
-          // Click to focus the score area
-          container.addEventListener('mousedown', () => { try { container.focus(); } catch {} });
+        if (container) {
+            // Click to focus the score area
+            container.addEventListener('mousedown', () => { try { container.focus(); } catch {} });
 
-          // Track whether focus is inside #sheet
-          container.addEventListener('focusin', () => { scoreHasFocus = true; });            // bubbles; good for children too  [oai_citation:3‡MDN Web Docs](https://developer.mozilla.org/en-US/docs/Web/API/Element/focusin_event?utm_source=chatgpt.com)
-          container.addEventListener('focusout', (e) => {                                    // bubbles on exit  [oai_citation:4‡MDN Web Docs](https://developer.mozilla.org/en-US/docs/Web/API/Element/focusout_event?utm_source=chatgpt.com)
-              const to = e.relatedTarget;
-              scoreHasFocus = !!(to && container.contains(to));
-          });
-      }
+            // Track whether focus is inside #sheet
+            container.addEventListener('focusin', () => { scoreHasFocus = true; });            // bubbles; good for children too  [oai_citation:3‡MDN Web Docs](https://developer.mozilla.org/en-US/docs/Web/API/Element/focusin_event?utm_source=chatgpt.com)
+            container.addEventListener('focusout', (e) => {                                    // bubbles on exit  [oai_citation:4‡MDN Web Docs](https://developer.mozilla.org/en-US/docs/Web/API/Element/focusout_event?utm_source=chatgpt.com)
+                const to = e.relatedTarget;
+                scoreHasFocus = !!(to && container.contains(to));
+            });
+        }
 
 // Global keydown: act only when the score currently has focus
-      document.addEventListener('keydown', (e) => {
-          if (!scoreHasFocus) return;
-          if (e.key === 'ArrowLeft')  { e.preventDefault(); prevNote(); }   // use .key, not keyCode (deprecated)  [oai_citation:5‡MDN Web Docs](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key?utm_source=chatgpt.com)
-          else if (e.key === 'ArrowRight') { e.preventDefault(); nextNote(); }
-      });
-    /* =========================
-       AlphaTab init + TEX
-       ========================= */
-    const TEX_TEMPLATE = (bpm) => buildTexFromUI(bpm);
+        document.addEventListener('keydown', (e) => {
+            if (!scoreHasFocus) return;
+            if (e.key === 'ArrowLeft')  { e.preventDefault(); prevNote(); }   // use .key, not keyCode (deprecated)  [oai_citation:5‡MDN Web Docs](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key?utm_source=chatgpt.com)
+            else if (e.key === 'ArrowRight') { e.preventDefault(); nextNote(); }
+        });
+        /* =========================
+           AlphaTab init + TEX
+           ========================= */
+        const TEX_TEMPLATE = (bpm) => buildTexFromUI(bpm);
 
-    function buildTexFromUI(overrideBpm = null, includeKey = true){
-      const rawTitle = (compTitle?.value ?? '').toString();
-      const cleanTitleSrc = (/^(null|undefined)$/i.test(rawTitle) ? '' : rawTitle).replace(/["\n\r]/g, ' ').trim();
-      const titleLine = cleanTitleSrc ? `\\title "${cleanTitleSrc}"` : '';
+        function buildTexFromUI(overrideBpm = null, includeKey = true){
+            const rawTitle = (compTitle?.value ?? '').toString();
+            const cleanTitleSrc = (/^(null|undefined)$/i.test(rawTitle) ? '' : rawTitle).replace(/["\n\r]/g, ' ').trim();
+            const titleLine = cleanTitleSrc ? `\\title "${cleanTitleSrc}"` : '';
 
-      const bpm = (overrideBpm != null)
-        ? (parseInt(overrideBpm,10) || CONFIG.DEFAULT_BPM)
-        : (parseInt(compTempo?.value,10) || STATE.currentBpm || CONFIG.DEFAULT_BPM);
-      const tempoLine = `\\tempo ${bpm} .`;
+            const bpm = (overrideBpm != null)
+                ? (parseInt(overrideBpm,10) || CONFIG.DEFAULT_BPM)
+                : (parseInt(compTempo?.value,10) || STATE.currentBpm || CONFIG.DEFAULT_BPM);
+            const tempoLine = `\\tempo ${bpm} .`;
 
-      const keyRawIn = (compKey?.value ?? '').toString().trim();
-      let keyLine = '';
-      if (includeKey && keyRawIn) {
-        // Allow A..G with optional #/b only; dropdown already provides normalized options
-        const m = keyRawIn.match(/^([A-G](?:#|b)?)$/i);
-        if (m) keyLine = ` `;
-      }
-
-      const body = (compBody?.value ?? '').toString().trim();
-      const header = [titleLine, tempoLine, keyLine].filter(s => !!s).join('\n');
-      const track  = `\\track \"Marimba\"\n\\instrument marimba`;
-      const content = body || `:4 C4 D4 E4 F4 | G4 A4 B4 C5 | C5 B4 A4 G4 | F4 E4 D4 C4`;
-      return `${header}\n${track}\n${content}`;
-    }
-
-    function renderFromUI(overrideBpm = null){
-      const tryRender = (useKey) => {
-        const tex = buildTexFromUI(overrideBpm, useKey);
-        STATE.currentBpm = parseInt(overrideBpm ?? (compTempo?.value || CONFIG.DEFAULT_BPM),10) || CONFIG.DEFAULT_BPM;
-        api.tex(tex);
-          // Ensure written key follows dropdown even if we had to retry render
-          try { setScoreKeyFromDropdown(); api.render(); } catch {}
-
-          updateCurrentKeyUI();
-      };
-      try {
-        tryRender(true); // with key
-      } catch(e1){
-        console.warn('AlphaTex render failed with key; retrying without key...', e1);
-        try {
-          tryRender(false);
-          try { const st = document.getElementById('status'); if (st) st.textContent = 'Rendered without key (check key selection).'; } catch {}
-        } catch(e2){
-          console.warn('AlphaTex render failed completely', e2);
-          try { const st = document.getElementById('status'); if (st) st.textContent = 'AlphaTex error. Check Title/Tempo/Key/Body.'; } catch {}
-        }
-      }
-    }
-
-    const api = STATE.api = new alphaTab.AlphaTabApi(container, {
-      core: { tex: true },
-      display: {
-        resources: {
-          titleFont: "32px 'MuseJazzText', serif",
-          subTitleFont: "20px 'MuseJazzText', serif",
-          wordsFont: "15px 'MuseJazzText', serif",
-          copyrightFont: "11px 'MuseJazzText', serif",
-          directionsFont: "16px 'MuseJazzText', serif",
-          markerFont: "bold 14px 'MuseJazzText', serif",
-          effectFont: "italic 12px 'MuseJazzText', serif",
-          graceFont: "11px 'MuseJazzText', serif",
-          barNumberFont: "12px 'MuseJazzText', serif",
-          timerFont: "12px 'MuseJazzText', serif",
-          fingeringFont: "12px 'MuseJazzText', serif",
-          inlineFingeringFont: "12px 'MuseJazzText', serif",
-          tablatureFont: "13px 'MuseJazzText', serif",
-          numberedNotationFont: "14px 'MuseJazzText', serif",
-          numberedNotationGraceFont: "12px 'MuseJazzText', serif",
-          fretboardNumberFont: "12px 'MuseJazzText', serif"
-        },
-        effectStaffPaddingTop: 16,
-        notationStaffPaddingBottom: 14,
-        effectStaffPaddingBottom: 12,
-        notationStaffPaddingTop: 10
-      },
-      player: {
-        enablePlayer: true,
-        enableCursor: true,
-        enableElementHighlighting: false,
-        soundFont: CONFIG.SOUNDFONT_URL,
-        scrollElement: container,
-        schedulerLookAhead: 20,
-        reverb: {
-        enabled: true,
-        roomSize: 1,  // 0.0 - 1.0
-        damping: 0.2,   // 0.0 - 1.0
-        width: 0.8,     // 0.0 - 1.0
-        level: 0.9      // 0.0 - 1.0 (amount of effect applied)
-      }
-
-      }
-    });
-
-    try { api.isLooping = false; } catch(_) {}
-    // SoundFont preference
-    const savedSf = localStorage.getItem('sfChoice') || 'local';
-    if (sfSelect) sfSelect.value = savedSf;
-    let __appliedSfUrl = null;
-    const applySoundFontChoice = (choice) => {
-      const url = choice === 'cdn' ? CONFIG.SOUNDFONT_CDN : CONFIG.SOUNDFONT_URL;
-      // Early-exit guard to avoid repeated loads
-      if (__appliedSfUrl === url) { return; }
-      __appliedSfUrl = url;
-      try {
-        if (typeof api.loadSoundFontFromUrl === 'function') {
-          api.loadSoundFontFromUrl(url);
-        } else {
-          const s = api.settings || (api.settings = {});
-          s.player = s.player || {};
-          s.player.soundFont = url;
-          api.updateSettings(s);
-        }
-      } catch (e) { console.warn('applySoundFontChoice failed:', e); }
-    };
-    applySoundFontChoice(savedSf);
-    const renderScoreWithBpm = (bpm) => {
-      STATE.currentBpm = bpm;
-      if (!STATE.baseBpm || STATE.baseBpm <= 0) STATE.baseBpm = STATE.currentBpm;
-      if (compTempo) compTempo.value = String(bpm);
-      renderFromUI(bpm);
-    };
-
-    /* =========================
-       Helpers (colors, ticks, etc.)
-       ========================= */
-    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-    const debounce = (fn, delay) => { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); }; };
-
-    // ---- Ensure MIDI is rebuilt after transpose so audio updates without needing tempo nudge
-    const regenerateMidi = (keepPlaying = true) => {
-      try {
-        const wasPlaying = api?.player?.state === alphaTab.synth.PlayerState.Playing;
-        const ct = typeof api.tickPosition === 'number' ? api.tickPosition : 0;
-        const pr = api.playbackRange ? { ...api.playbackRange } : null;
-
-        // pause while we rebuild (only if we intend to resume)
-        try { if (keepPlaying && wasPlaying) api.pause(); } catch {}
-
-        const onLoaded = () => {
-          try { api.midiLoaded.off(onLoaded); } catch {}
-          try { if (pr) api.playbackRange = pr; } catch {}
-          try { api.tickPosition = ct; } catch {}
-          if (keepPlaying && wasPlaying) {
-            try { api.play(); } catch {}
-          }
-        };
-        try { api.midiLoaded.on(onLoaded); } catch {}
-
-        // trigger regeneration
-        try { api.loadMidiForScore(); } catch (e) { console.warn('loadMidiForScore failed:', e); }
-      } catch (e) {
-        console.warn('regenerateMidi failed:', e);
-      }
-    };
-
-    // Debounced variants: resume only if we were playing vs. silent (no auto-play)
-    const regenMidiDebouncedPlay   = debounce(() => regenerateMidi(true),  75);
-    const regenMidiDebouncedSilent = debounce(() => regenerateMidi(false), 75);
-    const fmtTime = (ms) => { const s = Math.floor(ms/1000), m = Math.floor(s/60), r = s - m*60; return `${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`; };
-
-    const BW_COLORS = ['#FF0000','#FF6600','#FF9900','#FFCC00','#FFFF00','#00FF00','#00CCFF','#0066FF','#6600FF','#9900CC','#CC0099','#FF3399'];
-    const hexToRgb = (hex) => { const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex); return m ? { r: parseInt(m[1],16), g: parseInt(m[2],16), b: parseInt(m[3],16) } : { r:0,g:0,b:0 }; };
-    const rgbToHex = (r,g,b) => '#' + [r,g,b].map(v => clamp(v,0,255).toString(16).padStart(2,'0')).join('');
-    const hsvToRgb = (h,s,v) => { h=((h%360)+360)%360; s=clamp(s,0,100)/100; v=clamp(v,0,100)/100; const c=v*s, x=c*(1-Math.abs((h/60)%2-1)), m=v-c; let r=0,g=0,b=0;
-      if (h<60){r=c;g=x;b=0;} else if (h<120){r=x;g=c;b=0;} else if (h<180){r=0;g=c;b=x;} else if (h<240){r=0;g=x;b=c;} else if (h<300){r=x;g=0;b=c;} else {r=c;g=0;b=x;}
-      return { r: Math.round((r+m)*255), g: Math.round((g+m)*255), b: Math.round((b+m)*255) }; };
-    const hsvToHex = (h,s,v) => { const {r,g,b}=hsvToRgb(h,s,v); return rgbToHex(r,g,b); };
-    const pcColor = (midi) => { const pc = ((midi % 12) + 12) % 12; return BW_COLORS[pc] || '#000000'; };
-    const setHighlightColor = (hex) => document.documentElement.style.setProperty('--hl-color', hex);
-    const getStaticHlHex = () => hsvToHex(parseFloat(hlH.value)||0, parseFloat(hlS.value)||0, parseFloat(hlV.value)||0);
-
-    // Dynamically set cursor color to match current beat
-    function setCursorColorToBeat(beat) {
-      try {
-        if (!beat) return;
-        const curHex = beatTopColorHex(beat); // existing pitch→color logic
-        document.documentElement.style.setProperty('--cursor-color', curHex);
-        document.body.style.setProperty('--cursor-color', curHex);
-      } catch {}
-    }
-
-    const getTickCache = () => api.tickCache ?? api.boundsLookup ?? null;
-    function ticksPerMs(){
-      const tc = getTickCache();
-      const durMs = api?.player?.endTime ?? api?.score?.playTime ?? null;
-      const durTicks = api?.score?.duration ?? null;
-      if (tc && typeof tc.timeToTick === 'function' && durMs != null && durTicks != null) {
-        const tick0 = tc.timeToTick(0), tick1 = tc.timeToTick(1);
-        return Math.max(1, tick1 - tick0);
-      }
-      if (durMs && durTicks) return durTicks / durMs;
-      return 1;
-    }
-    function msToTicks(ms){ return Math.max(1, Math.round(ticksPerMs() * ms)); }
-    function ticksToMs(t){ const k = ticksPerMs(); return Math.round(t / k); }
-
-    const getTrackSet = () => {
-      const t = api?.score?.tracks || [];
-      const idx = new Set(); for (let i = 0; i < t.length; i++) idx.add(i);
-      if (idx.size === 0) idx.add(0); return idx;
-    };
-
-
-
-
-    /* =========================
-       Theme / notational styles
-       ========================= */
-    const applyDarkNotationalStyles = (score, dark) => {
-      try {
-        const A = alphaTab.model;
-        const WHITE = A.Color.fromJson('#FFFFFF');
-
-        if (dark) {
-          score.style = new A.ScoreStyle();
-          const SS = A.ScoreSubElement;
-          [SS.Title,SS.SubTitle,SS.Artist,SS.Album,SS.Words,SS.Music,SS.WordsAndMusic,SS.Transcriber,SS.Copyright,SS.CopyrightSecondLine,SS.ChordDiagramList]
-            .forEach(k => { if (k !== undefined) score.style.colors.set(k, WHITE); });
-          for (const track of score.tracks) {
-            track.style = new A.TrackStyle();
-            const TS = A.TrackSubElement;
-            [TS.TrackName, TS.BracesAndBrackets, TS.SystemSeparator, TS.StringTuning]
-              .forEach(k => { if (k !== undefined) track.style.colors.set(k, WHITE); });
-            for (const staff of track.staves) for (const bar of staff.bars) {
-              if (!bar.style) bar.style = new A.BarStyle();
-              const BSb = A.BarSubElement;
-              [BSb.StandardNotationBarNumber, BSb.StandardNotationBarLines, BSb.StandardNotationClef,
-               BSb.StandardNotationKeySignature, BSb.StandardNotationTimeSignature, BSb.StandardNotationStaffLine]
-               .forEach(k => { if (k !== undefined) bar.style.colors.set(k, WHITE); });
-              for (const voice of bar.voices) for (const beat of voice.beats) {
-                if (!beat.style) beat.style = new A.BeatStyle();
-                const BE = A.BeatSubElement;
-                [BE.Effects, BE.StandardNotationEffects].forEach(k => {
-                  if (k !== undefined) beat.style.colors.set(k, WHITE);
-                });
-              }
+            const keyRawIn = (compKey?.value ?? '').toString().trim();
+            let keyLine = '';
+            if (includeKey && keyRawIn) {
+                // Allow A..G with optional #/b only; dropdown already provides normalized options
+                const m = keyRawIn.match(/^([A-G](?:#|b)?)$/i);
+                if (m) keyLine = ` `;
             }
-          }
-        } else {
-          // fully reset all styles so colors are not stuck from dark mode
-          try { score.style = null; } catch {}
-          for (const track of score.tracks) {
-            try { track.style = null; } catch {}
-            for (const staff of track.staves) for (const bar of staff.bars) {
-              try { bar.style = null; } catch {}
-              for (const voice of bar.voices) {
-                for (const beat of voice.beats) {
-                  try { beat.style = null; } catch {}
-                  for (const n of beat.notes || []) { try { n.style = null; } catch {} }
+
+            const body = (compBody?.value ?? '').toString().trim();
+            const header = [titleLine, tempoLine, keyLine].filter(s => !!s).join('\n');
+            const track  = `\\track \"Marimba\"\n\\instrument marimba`;
+            const content = body || `:4 C4 D4 E4 F4 | G4 A4 B4 C5 | C5 B4 A4 G4 | F4 E4 D4 C4`;
+            return `${header}\n${track}\n${content}`;
+        }
+
+        function renderFromUI(overrideBpm = null){
+            const tryRender = (useKey) => {
+                const tex = buildTexFromUI(overrideBpm, useKey);
+                STATE.currentBpm = parseInt(overrideBpm ?? (compTempo?.value || CONFIG.DEFAULT_BPM),10) || CONFIG.DEFAULT_BPM;
+                api.tex(tex);
+                // Ensure written key follows dropdown even if we had to retry render
+                try { setScoreKeyFromDropdown(); api.render(); } catch {}
+
+                updateCurrentKeyUI();
+            };
+            try {
+                tryRender(true); // with key
+            } catch(e1){
+                console.warn('AlphaTex render failed with key; retrying without key...', e1);
+                try {
+                    tryRender(false);
+                    try { const st = document.getElementById('status'); if (st) st.textContent = 'Rendered without key (check key selection).'; } catch {}
+                } catch(e2){
+                    console.warn('AlphaTex render failed completely', e2);
+                    try { const st = document.getElementById('status'); if (st) st.textContent = 'AlphaTex error. Check Title/Tempo/Key/Body.'; } catch {}
                 }
-              }
             }
-          }
         }
-      } catch {}
-    };
 
-    const colorSets = (() => {
-      const A = alphaTab.model;
-      const NS = A.NoteSubElement, BS = A.BeatSubElement;
-      const NOTE_KEYS_ALL = [
-        NS.StandardNotationNoteHead, NS.StandardNotationAccidentals, NS.StandardNotationEffects,
-        NS.GuitarTabFretNumber, NS.GuitarTabEffects, NS.SlashNoteHead, NS.SlashEffects,
-        NS.NumberedNumber, NS.NumberedAccidentals, NS.NumberedEffects,
-        NS.StandardNotationLedgerLines, NS.StandardNotationLedgerLine, NS.LedgerLines
-      ].filter(Boolean);
-      const BEAT_KEYS_BASELINE = [
-        BS.StandardNotationStem, BS.StandardNotationFlags, BS.StandardNotationBeams, BS.StandardNotationTuplet,
-        BS.StandardNotationEffects, BS.StandardNotationRests, BS.StandardNotationGraceBeams, BS.StandardNotationGraceFlags,
-        BS.GuitarTabStem, BS.GuitarTabFlags, BS.GuitarTabBeams, BS.GuitarTabTuplet, BS.GuitarTabEffects,
-        BS.StandardNotationLedgerLines
-      ].filter(Boolean);
-      const BEAT_KEYS_ACCENT = BEAT_KEYS_BASELINE.filter(k =>
-        k !== BS.StandardNotationBeams && k !== BS.GuitarTabBeams && k !== BS.StandardNotationGraceBeams && k !==  BS.StandardNotationStem,
-      );
-      return { NOTE_KEYS_ALL, BEAT_KEYS_BASELINE, BEAT_KEYS_ACCENT };
-    })();
+        const api = STATE.api = new alphaTab.AlphaTabApi(container, {
+            core: { tex: true },
+            display: {
+                resources: {
+                    titleFont: "32px 'MuseJazzText', serif",
+                    subTitleFont: "20px 'MuseJazzText', serif",
+                    wordsFont: "15px 'MuseJazzText', serif",
+                    copyrightFont: "11px 'MuseJazzText', serif",
+                    directionsFont: "16px 'MuseJazzText', serif",
+                    markerFont: "bold 14px 'MuseJazzText', serif",
+                    effectFont: "italic 12px 'MuseJazzText', serif",
+                    graceFont: "11px 'MuseJazzText', serif",
+                    barNumberFont: "12px 'MuseJazzText', serif",
+                    timerFont: "12px 'MuseJazzText', serif",
+                    fingeringFont: "12px 'MuseJazzText', serif",
+                    inlineFingeringFont: "12px 'MuseJazzText', serif",
+                    tablatureFont: "13px 'MuseJazzText', serif",
+                    numberedNotationFont: "14px 'MuseJazzText', serif",
+                    numberedNotationGraceFont: "12px 'MuseJazzText', serif",
+                    fretboardNumberFont: "12px 'MuseJazzText', serif"
+                },
+                effectStaffPaddingTop: 16,
+                notationStaffPaddingBottom: 14,
+                effectStaffPaddingBottom: 12,
+                notationStaffPaddingTop: 10
+            },
+            player: {
+                enablePlayer: true,
+                enableCursor: true,
+                enableElementHighlighting: false,
+                soundFont: CONFIG.SOUNDFONT_URL,
+                scrollElement: container,
+                schedulerLookAhead: 20,
+                reverb: {
+                    enabled: true,
+                    roomSize: 1,  // 0.0 - 1.0
+                    damping: 0.2,   // 0.0 - 1.0
+                    width: 0.8,     // 0.0 - 1.0
+                    level: 0.9      // 0.0 - 1.0 (amount of effect applied)
+                }
 
-    const dimHex = (hex, factor=STATE.normalNoteDimFactor) => {
-      const {r,g,b} = hexToRgb(hex);
-      const target = STATE.isDark ? {r:255,g:255,b:255} : {r:0,g:0,b:0};
-      return rgbToHex(
-        Math.round(r*factor + target.r*(1-factor)),
-        Math.round(g*factor + target.g*(1-factor)),
-        Math.round(b*factor + target.b*(1-factor))
-      );
-    };
+            }
+        });
 
-    const beatSignature = (beat) => (beat?.notes || []).map(n => (typeof n?.realValue === 'number' ? n.realValue : 'x')).join(',');
-    const beatTopColorHex = (beat) => {
-      let top = null;
-      for (const n of beat?.notes || []) {
-        if (typeof n?.realValue === 'number' && (top === null || n.realValue > top.realValue)) top = n;
-      }
-      return top ? pcColor(top.realValue) : '#000000';
-    };
-    const findBeatInScore = (score, targetBeat) => {
-      if (!score || !targetBeat) return null;
-      const sig = beatSignature(targetBeat);
-      if (!sig) return null;
-      for (const track of score.tracks || []) for (const staff of track.staves || [])
-      for (const bar of staff.bars || []) for (const voice of bar.voices || [])
-      for (const beat of voice.beats || []) {
-        if ((beat?.notes?.length || 0) === (targetBeat.notes?.length || 0) && beatSignature(beat) === sig) return beat;
-      }
-      return null;
-    };
-
-    const recolorBeat = (beat) => {
-      if (!STATE.USE_INLINE_COLORING) return;
-      try {
-        const A = alphaTab.model, K = colorSets;
-        const dim = A.Color.fromJson(dimHex(beatTopColorHex(beat), STATE.normalNoteDimFactor));
-        if (!beat.style) beat.style = new A.BeatStyle();
-        for (const k of K.BEAT_KEYS_BASELINE) beat.style.colors.set(k, dim);
-        for (const n of beat.notes || []) {
-          if (typeof n.realValue !== 'number') continue;
-          const nhCol = A.Color.fromJson(dimHex(pcColor(n.realValue), STATE.normalNoteDimFactor));
-          if (!n.style) n.style = new A.NoteStyle();
-          for (const k of K.NOTE_KEYS_ALL) n.style.colors.set(k, nhCol);
-        }
-      } catch {}
-    };
-    const accentBeat = (beat) => {
-      if (!STATE.USE_INLINE_COLORING) return;
-      if (!beat) return;
-      const A = alphaTab.model, K = colorSets;
-      const fullHex = beatTopColorHex(beat);
-      const fullCol = A.Color.fromJson(fullHex);
-      if (!beat.style) beat.style = new A.BeatStyle();
-      for (const k of K.BEAT_KEYS_ACCENT) beat.style.colors.set(k, fullCol);
-      for (const n of (beat.notes || [])) {
-        if (typeof n.realValue !== 'number') continue;
-        const nFullCol = A.Color.fromJson(pcColor(n.realValue));
-        if (!n.style) n.style = new A.NoteStyle();
-        for (const k of K.NOTE_KEYS_ALL) n.style.colors.set(k, nFullCol);
-      }
-    };
-    const colorScoreByPitch = (score) => {
-      if (!STATE.USE_INLINE_COLORING) return;
-      try {
-        const A = alphaTab.model, K = colorSets;
-        for (const track of score?.tracks || []) for (const staff of track.staves || [])
-        for (const bar of staff.bars || []) for (const voice of bar.voices || [])
-        for (const beat of voice.beats || []) {
-          const topHex = beatTopColorHex(beat);
-          const stemHex = dimHex(topHex, STATE.normalNoteDimFactor);
-          const stemCol = A.Color.fromJson(stemHex);
-          if (!beat.style) beat.style = new A.BeatStyle();
-          for (const k of K.BEAT_KEYS_BASELINE) beat.style.colors.set(k, stemCol);
-          for (const n of beat.notes || []) {
-            if (typeof n.realValue !== 'number') continue;
-            const nh = A.Color.fromJson(dimHex(pcColor(n.realValue), STATE.normalNoteDimFactor));
-            if (!n.style) n.style = new A.NoteStyle();
-            for (const k of K.NOTE_KEYS_ALL) n.style.colors.set(k, nh);
-          }
-        }
-      } catch (e) { console.warn('colorScoreByPitch failed:', e); }
-    };
-
-    /* =========================
-       Built-in highlight assist
-       ========================= */
-    function setBuiltinHighlighting(on) {
-      STATE.builtinHighlightOn = !!on;
-      const s = api.settings || {};
-      s.player = s.player || {};
-      s.player.enableElementHighlighting = STATE.builtinHighlightOn;
-      try { api.updateSettings(s); api.render(); } catch (_) {}
-    }
-    STATE.USE_INLINE_COLORING = true;
-
-    // ---- Time/Tick conversion helpers (LoopTest compatible)
-    function ticksPerMs(){
-      const tc = api.tickCache ?? api.boundsLookup ?? null;
-      const durMs = api?.player?.endTime ?? api?.score?.playTime ?? null;
-      const durTicks = api?.score?.duration ?? null;
-      if (tc && typeof tc.timeToTick === 'function' && durMs != null && durTicks != null) {
-        const t0 = 0, t1 = 1; const tick0 = tc.timeToTick(t0); const tick1 = tc.timeToTick(t1);
-        return Math.max(1, tick1 - tick0);
-      }
-      if (durMs && durTicks) return durTicks / durMs;
-      return 1;
-    }
-    function msToTicks(ms){ return Math.max(1, Math.round(ticksPerMs() * ms)); }
-    function ticksToMs(t){ const k = ticksPerMs(); return Math.round(t / k); }
-    function currentTick() {
-      return (typeof api.tickPosition === 'number') ? api.tickPosition : (typeof api.player?.currentTick === 'number' ? api.player.currentTick : null);
-    }
-
-    // ---- PlaybackRange helpers
-    function getPlaybackRangeTicks() {
-      const pr = api.playbackRange || api.player?.playbackRange || null;
-      if (!pr) return { s:null, e:null, src:'none' };
-      if (typeof pr.startTick === 'number' && typeof pr.endTick === 'number') return { s: pr.startTick, e: pr.endTick, src:'playbackRange[ticks]' };
-      if (typeof pr.tickStart === 'number' && typeof pr.tickEnd === 'number') return { s: pr.tickStart, e: pr.tickEnd, src:'playbackRange[tickStart/tickEnd]' };
-      const msStart = (typeof pr.startTime === 'number') ? pr.startTime : (typeof pr.msStart === 'number' ? pr.msStart : null);
-      const msEnd   = (typeof pr.endTime === 'number') ? pr.endTime   : (typeof pr.msEnd === 'number'   ? pr.msEnd   : null);
-      if (msStart != null && msEnd != null) {
-        const tc = api.tickCache ?? api.boundsLookup ?? null;
-        if (tc && typeof tc.timeToTick === 'function') return { s: tc.timeToTick(msStart), e: tc.timeToTick(msEnd), src:'playbackRange[ms->tick]' };
-        const durMs = api?.player?.endTime ?? api?.score?.playTime ?? null;
-        const durTicks = api?.score?.duration ?? null;
-        if (durMs && durTicks) { const ratio = durTicks / durMs; return { s: Math.round(msStart * ratio), e: Math.round(msEnd * ratio), src:'playbackRange[estimate]' }; }
-      }
-      return { s:null, e:null, src:'playbackRange[unknown]' };
-    }
-
-    // ---- Loop state (LoopTest compatible)
-    let loopEnabled = false;
-    let loopStartTick = null;
-    let loopEndTick = null;
-    let seeks = 0;
-    let lastSeekAt = 0;
-    let EARLY_MS = 5;
-    let LOOP_SEEK_EARLY_TICKS = msToTicks(EARLY_MS);
-    let lateDelayMs = 0;
-
-    // wire sliders
-    const earlyMs = document.getElementById('earlyMs');
-    const earlyVal = document.getElementById('earlyVal');
-    const lateDelay = document.getElementById('lateDelay');
-    const lateDelayVal = document.getElementById('lateDelayVal');
-    if (earlyMs && earlyVal){ earlyMs.addEventListener('input', ()=>{ EARLY_MS = parseInt(earlyMs.value,10)||0; earlyVal.textContent = EARLY_MS; LOOP_SEEK_EARLY_TICKS = msToTicks(EARLY_MS); updateDebug('(early='+EARLY_MS+'ms)'); }); }
-    if (lateDelay && lateDelayVal){ lateDelay.addEventListener('input', ()=>{ lateDelayMs = parseInt(lateDelay.value,10)||0; lateDelayVal.textContent = lateDelayMs; }); }
-
-    function setLoopFromActiveRange() {
-      let s=null, e=null, used='none';
-      const pr = getPlaybackRangeTicks();
-      if (typeof pr.s === 'number' && typeof pr.e === 'number' && pr.e > pr.s) { s = pr.s; e = pr.e; used = pr.src; }
-      else if (typeof api.score?.duration === 'number') { s = 0; e = api.score.duration; used = 'score.duration'; }
-      loopStartTick = s; loopEndTick = e; updateDebug(`(setLoop via ${used})`);
-      updateLoopMasks();
-      return (loopStartTick != null && loopEndTick != null);
-    }
-
-    // === Loop mask helpers: dim everything outside the loop selection ===
-    let loopMaskL = null, loopMaskR = null;
-    function ensureLoopMasks(){
-      try {
-        const overlay = document.querySelector('#sheet .at-overlay');
-        if (!overlay) return null;
-        if (!loopMaskL){ loopMaskL = document.createElement('div'); loopMaskL.className = 'loop-mask left'; overlay.appendChild(loopMaskL); }
-        if (!loopMaskR){ loopMaskR = document.createElement('div'); loopMaskR.className = 'loop-mask right'; overlay.appendChild(loopMaskR); }
-        return overlay;
-      } catch { return null; }
-    }
-    function updateLoopMasks(){
-      const overlay = ensureLoopMasks();
-      if (!overlay){ return; }
-      const sel = document.querySelector('#sheet .at-selection div');
-      const on = !!loopEnabled && !!sel;
-      loopMaskL.style.display = on ? '' : 'none';
-      loopMaskR.style.display = on ? '' : 'none';
-      if (!on) return;
-      const ob = overlay.getBoundingClientRect();
-      const sb = sel.getBoundingClientRect();
-      // widths relative to overlay
-      const leftW = Math.max(0, Math.round(sb.left - ob.left));
-      const rightW = Math.max(0, Math.round(ob.right - sb.right));
-      loopMaskL.style.left = '0px';
-      loopMaskL.style.width = leftW + 'px';
-      loopMaskR.style.right = '0px';
-      loopMaskR.style.width = rightW + 'px';
-    }
-
-    function updateDebug(extra=''){
-      const dbg = document.getElementById('dbg'); if (!dbg) return;
-      const pr = getPlaybackRangeTicks();
-      const parts = [];
-      parts.push(`PR: ${pr.s ?? '–'} / ${pr.e ?? '–'}`);
-      parts.push(`Loop: ${loopStartTick ?? '–'} / ${loopEndTick ?? '–'}`);
-      parts.push(`ct: ${currentTick() ?? '–'}`);
-      parts.push(`seeks: ${seeks}`);
-      if (extra) parts.push(extra);
-      dbg.textContent = parts.join(' | ');
-    }
-
-    function ensureSeekToLoopStart() {
-      const now = performance.now ? performance.now() : Date.now();
-      if (now - lastSeekAt < 15) return;
-      lastSeekAt = now;
-      try {
-        if (currentTick() >= loopEndTick) return;
-        // LoopTest behavior: jump via tickPosition and keep playing
-        api.tickPosition = loopStartTick ?? 0;
-        if (api.player && api.player.state !== alphaTab.synth.PlayerState.Playing) { api.play(); }
-        try { api.scrollToCursor(); } catch(_) {}
-        seeks++; updateDebug('(seek)');
-      } catch {}
-    }
-
-    // buttons to set playbackRange endpoints
-    const btnSetStart = document.getElementById('btnSetStart');
-    const btnSetEnd   = document.getElementById('btnSetEnd');
-    if (btnSetStart) btnSetStart.onclick = () => {
-      const ct = currentTick(); if (ct == null) return;
-      const pr = getPlaybackRangeTicks();
-      const s = ct, e = (typeof pr.e === 'number' ? pr.e : (api.score?.duration ?? ct+1));
-      api.playbackRange = { startTick: Math.max(0, Math.min(s, e-1)), endTick: Math.max(s+1, e) };
-      if (loopEnabled) setLoopFromActiveRange();
-      updateDebug('(start=ct)');
-      updateLoopMasks();
-    };
-    if (btnSetEnd) btnSetEnd.onclick = () => {
-      const ct = currentTick(); if (ct == null) return;
-      const pr = getPlaybackRangeTicks();
-      const s = (typeof pr.s === 'number' ? pr.s : 0), e = ct;
-      api.playbackRange = { startTick: Math.max(0, Math.min(s, e-1)), endTick: Math.max(s+1, e) };
-      if (loopEnabled) setLoopFromActiveRange();
-      updateDebug('(end=ct)');
-      updateLoopMasks();
-    };
-
-    // toggle loop using the same button id as HTML (#loop)
-    //const btnLoop = document.getElementById('loop');
-    if (btnLoop){
-      btnLoop.addEventListener('click', ()=>{
-        loopEnabled = !loopEnabled;
-        btnLoop.classList.toggle('active', loopEnabled);
-        btnLoop.setAttribute('aria-pressed', loopEnabled ? 'true' : 'false');
-        if (loopEnabled) setLoopFromActiveRange(); else { loopStartTick = loopEndTick = null; }
         try { api.isLooping = false; } catch(_) {}
-        updateDebug(loopEnabled ? '(loop:on)' : '(loop:off)');
-        updateLoopMasks();
-      });
-    }
+        // SoundFont preference
+        const savedSf = localStorage.getItem('sfChoice') || 'local';
+        if (sfSelect) sfSelect.value = savedSf;
+        let __appliedSfUrl = null;
+        const applySoundFontChoice = (choice) => {
+            const url = choice === 'cdn' ? CONFIG.SOUNDFONT_CDN : CONFIG.SOUNDFONT_URL;
+            // Early-exit guard to avoid repeated loads
+            if (__appliedSfUrl === url) { return; }
+            __appliedSfUrl = url;
+            try {
+                if (typeof api.loadSoundFontFromUrl === 'function') {
+                    api.loadSoundFontFromUrl(url);
+                } else {
+                    const s = api.settings || (api.settings = {});
+                    s.player = s.player || {};
+                    s.player.soundFont = url;
+                    api.updateSettings(s);
+                }
+            } catch (e) { console.warn('applySoundFontChoice failed:', e); }
+        };
+        applySoundFontChoice(savedSf);
+        const renderScoreWithBpm = (bpm) => {
+            STATE.currentBpm = bpm;
+            if (!STATE.baseBpm || STATE.baseBpm <= 0) STATE.baseBpm = STATE.currentBpm;
+            if (compTempo) compTempo.value = String(bpm);
+            renderFromUI(bpm);
+        };
+
+        /* =========================
+           Helpers (colors, ticks, etc.)
+           ========================= */
+        const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+        const debounce = (fn, delay) => { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); }; };
+
+        // ---- Ensure MIDI is rebuilt after transpose so audio updates without needing tempo nudge
+        const regenerateMidi = (keepPlaying = true) => {
+            try {
+                const wasPlaying = api?.player?.state === alphaTab.synth.PlayerState.Playing;
+                const ct = typeof api.tickPosition === 'number' ? api.tickPosition : 0;
+                const pr = api.playbackRange ? { ...api.playbackRange } : null;
+
+                // pause while we rebuild (only if we intend to resume)
+                try { if (keepPlaying && wasPlaying) api.pause(); } catch {}
+
+                const onLoaded = () => {
+                    try { api.midiLoaded.off(onLoaded); } catch {}
+                    try { if (pr) api.playbackRange = pr; } catch {}
+                    try { api.tickPosition = ct; } catch {}
+                    if (keepPlaying && wasPlaying) {
+                        try { api.play(); } catch {}
+                    }
+                };
+                try { api.midiLoaded.on(onLoaded); } catch {}
+
+                // trigger regeneration
+                try { api.loadMidiForScore(); } catch (e) { console.warn('loadMidiForScore failed:', e); }
+            } catch (e) {
+                console.warn('regenerateMidi failed:', e);
+            }
+        };
+
+        // Debounced variants: resume only if we were playing vs. silent (no auto-play)
+        const regenMidiDebouncedPlay   = debounce(() => regenerateMidi(true),  75);
+        const regenMidiDebouncedSilent = debounce(() => regenerateMidi(false), 75);
+        const fmtTime = (ms) => { const s = Math.floor(ms/1000), m = Math.floor(s/60), r = s - m*60; return `${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`; };
+
+        const BW_COLORS = ['#FF0000','#FF6600','#FF9900','#FFCC00','#FFFF00','#00FF00','#00CCFF','#0066FF','#6600FF','#9900CC','#CC0099','#FF3399'];
+        const hexToRgb = (hex) => { const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex); return m ? { r: parseInt(m[1],16), g: parseInt(m[2],16), b: parseInt(m[3],16) } : { r:0,g:0,b:0 }; };
+        const rgbToHex = (r,g,b) => '#' + [r,g,b].map(v => clamp(v,0,255).toString(16).padStart(2,'0')).join('');
+        const hsvToRgb = (h,s,v) => { h=((h%360)+360)%360; s=clamp(s,0,100)/100; v=clamp(v,0,100)/100; const c=v*s, x=c*(1-Math.abs((h/60)%2-1)), m=v-c; let r=0,g=0,b=0;
+            if (h<60){r=c;g=x;b=0;} else if (h<120){r=x;g=c;b=0;} else if (h<180){r=0;g=c;b=x;} else if (h<240){r=0;g=x;b=c;} else if (h<300){r=x;g=0;b=c;} else {r=c;g=0;b=x;}
+            return { r: Math.round((r+m)*255), g: Math.round((g+m)*255), b: Math.round((b+m)*255) }; };
+        const hsvToHex = (h,s,v) => { const {r,g,b}=hsvToRgb(h,s,v); return rgbToHex(r,g,b); };
+        const pcColor = (midi) => { const pc = ((midi % 12) + 12) % 12; return BW_COLORS[pc] || '#000000'; };
+        const setHighlightColor = (hex) => document.documentElement.style.setProperty('--hl-color', hex);
+        const getStaticHlHex = () => hsvToHex(parseFloat(hlH.value)||0, parseFloat(hlS.value)||0, parseFloat(hlV.value)||0);
+
+        // Dynamically set cursor color to match current beat
+        function setCursorColorToBeat(beat) {
+            try {
+                if (!beat) return;
+                const curHex = beatTopColorHex(beat); // existing pitch→color logic
+                document.documentElement.style.setProperty('--cursor-color', curHex);
+                document.body.style.setProperty('--cursor-color', curHex);
+            } catch {}
+        }
+
+        const getTickCache = () => api.tickCache ?? api.boundsLookup ?? null;
+        function ticksPerMs(){
+            const tc = getTickCache();
+            const durMs = api?.player?.endTime ?? api?.score?.playTime ?? null;
+            const durTicks = api?.score?.duration ?? null;
+            if (tc && typeof tc.timeToTick === 'function' && durMs != null && durTicks != null) {
+                const tick0 = tc.timeToTick(0), tick1 = tc.timeToTick(1);
+                return Math.max(1, tick1 - tick0);
+            }
+            if (durMs && durTicks) return durTicks / durMs;
+            return 1;
+        }
+        function msToTicks(ms){ return Math.max(1, Math.round(ticksPerMs() * ms)); }
+        function ticksToMs(t){ const k = ticksPerMs(); return Math.round(t / k); }
+
+        const getTrackSet = () => {
+            const t = api?.score?.tracks || [];
+            const idx = new Set(); for (let i = 0; i < t.length; i++) idx.add(i);
+            if (idx.size === 0) idx.add(0); return idx;
+        };
 
 
 
-    // hook AlphaTab events to drive loop
-    api.playerStateChanged.on(e => {
-      const playing = e.state === alphaTab.synth.PlayerState.Playing;
-      document.getElementById('play').textContent = playing ? 'Pause' : 'Play';
-      if (playing && loopEnabled && loopStartTick != null) { ensureSeekToLoopStart(); }
-      updateDebug('(state)');
-    });
 
-    api.playerPositionChanged.on(e => {
-      // keep your existing time display if present
-      const pos = document.getElementById('pos');
-      if (pos) pos.textContent = `${String(Math.floor(e.currentTime/60000)).padStart(2,'0')}:${String(Math.floor((e.currentTime/1000)%60)).padStart(2,'0')} / ${String(Math.floor(e.endTime/60000)).padStart(2,'0')}:${String(Math.floor((e.endTime/1000)%60)).padStart(2,'0')}`;
-      if (loopEnabled && loopStartTick != null && loopEndTick != null) {
-        const ct = e.currentTick;
-        if (typeof ct === 'number' && ct >= (loopEndTick - LOOP_SEEK_EARLY_TICKS)) { ensureSeekToLoopStart(); }
-      }
-      updateDebug();
-    });
+        /* =========================
+           Theme / notational styles
+           ========================= */
+        const applyDarkNotationalStyles = (score, dark) => {
+            try {
+                const A = alphaTab.model;
+                const WHITE = A.Color.fromJson('#FFFFFF');
 
-    api.playbackRangeChanged?.on?.(()=>{ if (loopEnabled) setLoopFromActiveRange(); updateDebug('(PR changed)'); updateLoopMasks(); });
+                if (dark) {
+                    score.style = new A.ScoreStyle();
+                    const SS = A.ScoreSubElement;
+                    [SS.Title,SS.SubTitle,SS.Artist,SS.Album,SS.Words,SS.Music,SS.WordsAndMusic,SS.Transcriber,SS.Copyright,SS.CopyrightSecondLine,SS.ChordDiagramList]
+                        .forEach(k => { if (k !== undefined) score.style.colors.set(k, WHITE); });
+                    for (const track of score.tracks) {
+                        track.style = new A.TrackStyle();
+                        const TS = A.TrackSubElement;
+                        [TS.TrackName, TS.BracesAndBrackets, TS.SystemSeparator, TS.StringTuning]
+                            .forEach(k => { if (k !== undefined) track.style.colors.set(k, WHITE); });
+                        for (const staff of track.staves) for (const bar of staff.bars) {
+                            if (!bar.style) bar.style = new A.BarStyle();
+                            const BSb = A.BarSubElement;
+                            [BSb.StandardNotationBarNumber, BSb.StandardNotationBarLines, BSb.StandardNotationClef,
+                                BSb.StandardNotationKeySignature, BSb.StandardNotationTimeSignature, BSb.StandardNotationStaffLine]
+                                .forEach(k => { if (k !== undefined) bar.style.colors.set(k, WHITE); });
+                            for (const voice of bar.voices) for (const beat of voice.beats) {
+                                if (!beat.style) beat.style = new A.BeatStyle();
+                                const BE = A.BeatSubElement;
+                                [BE.Effects, BE.StandardNotationEffects].forEach(k => {
+                                    if (k !== undefined) beat.style.colors.set(k, WHITE);
+                                });
+                            }
+                        }
+                    }
+                } else {
+                    // fully reset all styles so colors are not stuck from dark mode
+                    try { score.style = null; } catch {}
+                    for (const track of score.tracks) {
+                        try { track.style = null; } catch {}
+                        for (const staff of track.staves) for (const bar of staff.bars) {
+                            try { bar.style = null; } catch {}
+                            for (const voice of bar.voices) {
+                                for (const beat of voice.beats) {
+                                    try { beat.style = null; } catch {}
+                                    for (const n of beat.notes || []) { try { n.style = null; } catch {} }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch {}
+        };
 
-    api.playerFinished.on(()=>{
-      if (!loopEnabled || loopStartTick == null) return;
-      setTimeout(()=>{ api.tickPosition = loopStartTick; api.play(); seeks++; updateDebug('(finished->restart)'); }, lateDelayMs);
-    });
+        const colorSets = (() => {
+            const A = alphaTab.model;
+            const NS = A.NoteSubElement, BS = A.BeatSubElement;
+            const NOTE_KEYS_ALL = [
+                NS.StandardNotationNoteHead, NS.StandardNotationAccidentals, NS.StandardNotationEffects,
+                NS.GuitarTabFretNumber, NS.GuitarTabEffects, NS.SlashNoteHead, NS.SlashEffects,
+                NS.NumberedNumber, NS.NumberedAccidentals, NS.NumberedEffects,
+                NS.StandardNotationLedgerLines, NS.StandardNotationLedgerLine, NS.LedgerLines
+            ].filter(Boolean);
+            const BEAT_KEYS_BASELINE = [
+                BS.StandardNotationStem, BS.StandardNotationFlags, BS.StandardNotationBeams, BS.StandardNotationTuplet,
+                BS.StandardNotationEffects, BS.StandardNotationRests, BS.StandardNotationGraceBeams, BS.StandardNotationGraceFlags,
+                BS.GuitarTabStem, BS.GuitarTabFlags, BS.GuitarTabBeams, BS.GuitarTabTuplet, BS.GuitarTabEffects,
+                BS.StandardNotationLedgerLines
+            ].filter(Boolean);
+            const BEAT_KEYS_ACCENT = BEAT_KEYS_BASELINE.filter(k =>
+                k !== BS.StandardNotationBeams && k !== BS.GuitarTabBeams && k !== BS.StandardNotationGraceBeams && k !==  BS.StandardNotationStem,
+            );
+            return { NOTE_KEYS_ALL, BEAT_KEYS_BASELINE, BEAT_KEYS_ACCENT };
+        })();
 
-    api.scoreLoaded.on(()=>{ setLoopFromActiveRange(); LOOP_SEEK_EARLY_TICKS = msToTicks(EARLY_MS); updateDebug(`(recalc early=${LOOP_SEEK_EARLY_TICKS}t ~${ticksToMs(LOOP_SEEK_EARLY_TICKS)}ms)`);
-      updateLoopMasks();
+        const dimHex = (hex, factor=STATE.normalNoteDimFactor) => {
+            const {r,g,b} = hexToRgb(hex);
+            const target = STATE.isDark ? {r:255,g:255,b:255} : {r:0,g:0,b:0};
+            return rgbToHex(
+                Math.round(r*factor + target.r*(1-factor)),
+                Math.round(g*factor + target.g*(1-factor)),
+                Math.round(b*factor + target.b*(1-factor))
+            );
+        };
+
+        const beatSignature = (beat) => (beat?.notes || []).map(n => (typeof n?.realValue === 'number' ? n.realValue : 'x')).join(',');
+        const beatTopColorHex = (beat) => {
+            let top = null;
+            for (const n of beat?.notes || []) {
+                if (typeof n?.realValue === 'number' && (top === null || n.realValue > top.realValue)) top = n;
+            }
+            return top ? pcColor(top.realValue) : '#000000';
+        };
+        const findBeatInScore = (score, targetBeat) => {
+            if (!score || !targetBeat) return null;
+            const sig = beatSignature(targetBeat);
+            if (!sig) return null;
+            for (const track of score.tracks || []) for (const staff of track.staves || [])
+                for (const bar of staff.bars || []) for (const voice of bar.voices || [])
+                    for (const beat of voice.beats || []) {
+                        if ((beat?.notes?.length || 0) === (targetBeat.notes?.length || 0) && beatSignature(beat) === sig) return beat;
+                    }
+            return null;
+        };
+
+        const recolorBeat = (beat) => {
+            if (!STATE.USE_INLINE_COLORING) return;
+            try {
+                const A = alphaTab.model, K = colorSets;
+                const dim = A.Color.fromJson(dimHex(beatTopColorHex(beat), STATE.normalNoteDimFactor));
+                if (!beat.style) beat.style = new A.BeatStyle();
+                for (const k of K.BEAT_KEYS_BASELINE) beat.style.colors.set(k, dim);
+                for (const n of beat.notes || []) {
+                    if (typeof n.realValue !== 'number') continue;
+                    const nhCol = A.Color.fromJson(dimHex(pcColor(n.realValue), STATE.normalNoteDimFactor));
+                    if (!n.style) n.style = new A.NoteStyle();
+                    for (const k of K.NOTE_KEYS_ALL) n.style.colors.set(k, nhCol);
+                }
+            } catch {}
+        };
+        const accentBeat = (beat) => {
+            if (!STATE.USE_INLINE_COLORING) return;
+            if (!beat) return;
+            const A = alphaTab.model, K = colorSets;
+            const fullHex = beatTopColorHex(beat);
+            const fullCol = A.Color.fromJson(fullHex);
+            if (!beat.style) beat.style = new A.BeatStyle();
+            for (const k of K.BEAT_KEYS_ACCENT) beat.style.colors.set(k, fullCol);
+            for (const n of (beat.notes || [])) {
+                if (typeof n.realValue !== 'number') continue;
+                const nFullCol = A.Color.fromJson(pcColor(n.realValue));
+                if (!n.style) n.style = new A.NoteStyle();
+                for (const k of K.NOTE_KEYS_ALL) n.style.colors.set(k, nFullCol);
+            }
+        };
+        const colorScoreByPitch = (score) => {
+            if (!STATE.USE_INLINE_COLORING) return;
+            try {
+                const A = alphaTab.model, K = colorSets;
+                for (const track of score?.tracks || []) for (const staff of track.staves || [])
+                    for (const bar of staff.bars || []) for (const voice of bar.voices || [])
+                        for (const beat of voice.beats || []) {
+                            const topHex = beatTopColorHex(beat);
+                            const stemHex = dimHex(topHex, STATE.normalNoteDimFactor);
+                            const stemCol = A.Color.fromJson(stemHex);
+                            if (!beat.style) beat.style = new A.BeatStyle();
+                            for (const k of K.BEAT_KEYS_BASELINE) beat.style.colors.set(k, stemCol);
+                            for (const n of beat.notes || []) {
+                                if (typeof n.realValue !== 'number') continue;
+                                const nh = A.Color.fromJson(dimHex(pcColor(n.realValue), STATE.normalNoteDimFactor));
+                                if (!n.style) n.style = new A.NoteStyle();
+                                for (const k of K.NOTE_KEYS_ALL) n.style.colors.set(k, nh);
+                            }
+                        }
+            } catch (e) { console.warn('colorScoreByPitch failed:', e); }
+        };
+
+        /* =========================
+           Built-in highlight assist
+           ========================= */
+        function setBuiltinHighlighting(on) {
+            STATE.builtinHighlightOn = !!on;
+            const s = api.settings || {};
+            s.player = s.player || {};
+            s.player.enableElementHighlighting = STATE.builtinHighlightOn;
+            try { api.updateSettings(s); api.render(); } catch (_) {}
+        }
+        STATE.USE_INLINE_COLORING = true;
+
+        // ---- Time/Tick conversion helpers (LoopTest compatible)
+        function ticksPerMs(){
+            const tc = api.tickCache ?? api.boundsLookup ?? null;
+            const durMs = api?.player?.endTime ?? api?.score?.playTime ?? null;
+            const durTicks = api?.score?.duration ?? null;
+            if (tc && typeof tc.timeToTick === 'function' && durMs != null && durTicks != null) {
+                const t0 = 0, t1 = 1; const tick0 = tc.timeToTick(t0); const tick1 = tc.timeToTick(t1);
+                return Math.max(1, tick1 - tick0);
+            }
+            if (durMs && durTicks) return durTicks / durMs;
+            return 1;
+        }
+        function msToTicks(ms){ return Math.max(1, Math.round(ticksPerMs() * ms)); }
+        function ticksToMs(t){ const k = ticksPerMs(); return Math.round(t / k); }
+        function currentTick() {
+            return (typeof api.tickPosition === 'number') ? api.tickPosition : (typeof api.player?.currentTick === 'number' ? api.player.currentTick : null);
+        }
+
+        // ---- PlaybackRange helpers
+        function getPlaybackRangeTicks() {
+            const pr = api.playbackRange || api.player?.playbackRange || null;
+            if (!pr) return { s:null, e:null, src:'none' };
+            if (typeof pr.startTick === 'number' && typeof pr.endTick === 'number') return { s: pr.startTick, e: pr.endTick, src:'playbackRange[ticks]' };
+            if (typeof pr.tickStart === 'number' && typeof pr.tickEnd === 'number') return { s: pr.tickStart, e: pr.tickEnd, src:'playbackRange[tickStart/tickEnd]' };
+            const msStart = (typeof pr.startTime === 'number') ? pr.startTime : (typeof pr.msStart === 'number' ? pr.msStart : null);
+            const msEnd   = (typeof pr.endTime === 'number') ? pr.endTime   : (typeof pr.msEnd === 'number'   ? pr.msEnd   : null);
+            if (msStart != null && msEnd != null) {
+                const tc = api.tickCache ?? api.boundsLookup ?? null;
+                if (tc && typeof tc.timeToTick === 'function') return { s: tc.timeToTick(msStart), e: tc.timeToTick(msEnd), src:'playbackRange[ms->tick]' };
+                const durMs = api?.player?.endTime ?? api?.score?.playTime ?? null;
+                const durTicks = api?.score?.duration ?? null;
+                if (durMs && durTicks) { const ratio = durTicks / durMs; return { s: Math.round(msStart * ratio), e: Math.round(msEnd * ratio), src:'playbackRange[estimate]' }; }
+            }
+            return { s:null, e:null, src:'playbackRange[unknown]' };
+        }
+
+        // ---- Loop state (LoopTest compatible)
+        let loopEnabled = false;
+        let loopStartTick = null;
+        let loopEndTick = null;
+        let seeks = 0;
+        let lastSeekAt = 0;
+        let EARLY_MS = 5;
+        let LOOP_SEEK_EARLY_TICKS = msToTicks(EARLY_MS);
+        let lateDelayMs = 0;
+
+        // wire sliders
+        const earlyMs = document.getElementById('earlyMs');
+        const earlyVal = document.getElementById('earlyVal');
+        const lateDelay = document.getElementById('lateDelay');
+        const lateDelayVal = document.getElementById('lateDelayVal');
+        if (earlyMs && earlyVal){ earlyMs.addEventListener('input', ()=>{ EARLY_MS = parseInt(earlyMs.value,10)||0; earlyVal.textContent = EARLY_MS; LOOP_SEEK_EARLY_TICKS = msToTicks(EARLY_MS); updateDebug('(early='+EARLY_MS+'ms)'); }); }
+        if (lateDelay && lateDelayVal){ lateDelay.addEventListener('input', ()=>{ lateDelayMs = parseInt(lateDelay.value,10)||0; lateDelayVal.textContent = lateDelayMs; }); }
+
+        function setLoopFromActiveRange() {
+            let s=null, e=null, used='none';
+            const pr = getPlaybackRangeTicks();
+            if (typeof pr.s === 'number' && typeof pr.e === 'number' && pr.e > pr.s) { s = pr.s; e = pr.e; used = pr.src; }
+            else if (typeof api.score?.duration === 'number') { s = 0; e = api.score.duration; used = 'score.duration'; }
+            loopStartTick = s; loopEndTick = e; updateDebug(`(setLoop via ${used})`);
+            updateLoopMasks();
+            return (loopStartTick != null && loopEndTick != null);
+        }
+
+        // === Loop mask helpers: dim everything outside the loop selection ===
+        let loopMaskL = null, loopMaskR = null;
+        function ensureLoopMasks(){
+            try {
+                const overlay = document.querySelector('#sheet .at-overlay');
+                if (!overlay) return null;
+                if (!loopMaskL){ loopMaskL = document.createElement('div'); loopMaskL.className = 'loop-mask left'; overlay.appendChild(loopMaskL); }
+                if (!loopMaskR){ loopMaskR = document.createElement('div'); loopMaskR.className = 'loop-mask right'; overlay.appendChild(loopMaskR); }
+                return overlay;
+            } catch { return null; }
+        }
+        function updateLoopMasks(){
+            const overlay = ensureLoopMasks();
+            if (!overlay){ return; }
+            const sel = document.querySelector('#sheet .at-selection div');
+            const on = !!loopEnabled && !!sel;
+            loopMaskL.style.display = on ? '' : 'none';
+            loopMaskR.style.display = on ? '' : 'none';
+            if (!on) return;
+            const ob = overlay.getBoundingClientRect();
+            const sb = sel.getBoundingClientRect();
+            // widths relative to overlay
+            const leftW = Math.max(0, Math.round(sb.left - ob.left));
+            const rightW = Math.max(0, Math.round(ob.right - sb.right));
+            loopMaskL.style.left = '0px';
+            loopMaskL.style.width = leftW + 'px';
+            loopMaskR.style.right = '0px';
+            loopMaskR.style.width = rightW + 'px';
+        }
+
+        function updateDebug(extra=''){
+            const dbg = document.getElementById('dbg'); if (!dbg) return;
+            const pr = getPlaybackRangeTicks();
+            const parts = [];
+            parts.push(`PR: ${pr.s ?? '–'} / ${pr.e ?? '–'}`);
+            parts.push(`Loop: ${loopStartTick ?? '–'} / ${loopEndTick ?? '–'}`);
+            parts.push(`ct: ${currentTick() ?? '–'}`);
+            parts.push(`seeks: ${seeks}`);
+            if (extra) parts.push(extra);
+            dbg.textContent = parts.join(' | ');
+        }
+
+        function ensureSeekToLoopStart() {
+            const now = performance.now ? performance.now() : Date.now();
+            if (now - lastSeekAt < 15) return;
+            lastSeekAt = now;
+            try {
+                if (currentTick() >= loopEndTick) return;
+                // LoopTest behavior: jump via tickPosition and keep playing
+                api.tickPosition = loopStartTick ?? 0;
+                if (api.player && api.player.state !== alphaTab.synth.PlayerState.Playing) { api.play(); }
+                try { api.scrollToCursor(); } catch(_) {}
+                seeks++; updateDebug('(seek)');
+            } catch {}
+        }
+
+        // buttons to set playbackRange endpoints
+        const btnSetStart = document.getElementById('btnSetStart');
+        const btnSetEnd   = document.getElementById('btnSetEnd');
+        if (btnSetStart) btnSetStart.onclick = () => {
+            const ct = currentTick(); if (ct == null) return;
+            const pr = getPlaybackRangeTicks();
+            const s = ct, e = (typeof pr.e === 'number' ? pr.e : (api.score?.duration ?? ct+1));
+            api.playbackRange = { startTick: Math.max(0, Math.min(s, e-1)), endTick: Math.max(s+1, e) };
+            if (loopEnabled) setLoopFromActiveRange();
+            updateDebug('(start=ct)');
+            updateLoopMasks();
+        };
+        if (btnSetEnd) btnSetEnd.onclick = () => {
+            const ct = currentTick(); if (ct == null) return;
+            const pr = getPlaybackRangeTicks();
+            const s = (typeof pr.s === 'number' ? pr.s : 0), e = ct;
+            api.playbackRange = { startTick: Math.max(0, Math.min(s, e-1)), endTick: Math.max(s+1, e) };
+            if (loopEnabled) setLoopFromActiveRange();
+            updateDebug('(end=ct)');
+            updateLoopMasks();
+        };
+
+        // toggle loop using the same button id as HTML (#loop)
+        //const btnLoop = document.getElementById('loop');
+        if (btnLoop){
+            btnLoop.addEventListener('click', ()=>{
+                loopEnabled = !loopEnabled;
+                btnLoop.classList.toggle('active', loopEnabled);
+                btnLoop.setAttribute('aria-pressed', loopEnabled ? 'true' : 'false');
+                if (loopEnabled) setLoopFromActiveRange(); else { loopStartTick = loopEndTick = null; }
+                try { api.isLooping = false; } catch(_) {}
+                updateDebug(loopEnabled ? '(loop:on)' : '(loop:off)');
+                updateLoopMasks();
+            });
+        }
 
 
-    });
-    api.midiLoaded.on(()=>{ LOOP_SEEK_EARLY_TICKS = msToTicks(EARLY_MS); updateDebug(`(recalc early=${LOOP_SEEK_EARLY_TICKS}t ~${ticksToMs(LOOP_SEEK_EARLY_TICKS)}ms)`); });
 
-    /* =========================
-       Strict key mapping + enharmonics
-       ========================= */
+        // hook AlphaTab events to drive loop
+        api.playerStateChanged.on(e => {
+            const playing = e.state === alphaTab.synth.PlayerState.Playing;
+            document.getElementById('play').textContent = playing ? 'Pause' : 'Play';
+            // Only force a seek when resuming at/after the loop end window; otherwise keep the paused position
+            if (playing && loopEnabled && loopStartTick != null) {
+                const ct = currentTick();
+                if (typeof ct === 'number' && loopEndTick != null && ct >= (loopEndTick - LOOP_SEEK_EARLY_TICKS)) {
+                    ensureSeekToLoopStart();
+                }
+            }
+            updateDebug('(state)');
+        });
 
-      // --- Key name helpers (written key dropdown) ---
-      const KEYNAME_TO_KS = {
-          'C':0,'G':1,'D':2,'A':3,'E':4,'B':5,'F#':6,'C#':7,
-          'F':-1,'Bb':-2,'Eb':-3,'Ab':-4,'Db':-5,'Gb':-6,'Cb':-7
-      };
+        api.playerPositionChanged.on(e => {
+            // keep your existing time display if present
+            const pos = document.getElementById('pos');
+            if (pos) pos.textContent = `${String(Math.floor(e.currentTime/60000)).padStart(2,'0')}:${String(Math.floor((e.currentTime/1000)%60)).padStart(2,'0')} / ${String(Math.floor(e.endTime/60000)).padStart(2,'0')}:${String(Math.floor((e.endTime/1000)%60)).padStart(2,'0')}`;
+            if (loopEnabled && loopStartTick != null && loopEndTick != null) {
+                const ct = e.currentTick;
+                if (typeof ct === 'number' && ct >= (loopEndTick - LOOP_SEEK_EARLY_TICKS)) { ensureSeekToLoopStart(); }
+            }
+            updateDebug();
+        });
+
+        api.playbackRangeChanged?.on?.(()=>{ if (loopEnabled) setLoopFromActiveRange(); updateDebug('(PR changed)'); updateLoopMasks(); });
+
+        api.playerFinished.on(()=>{
+            if (!loopEnabled || loopStartTick == null) return;
+            setTimeout(()=>{ api.tickPosition = loopStartTick; api.play(); seeks++; updateDebug('(finished->restart)'); }, lateDelayMs);
+        });
+
+        api.scoreLoaded.on(()=>{ setLoopFromActiveRange(); LOOP_SEEK_EARLY_TICKS = msToTicks(EARLY_MS); updateDebug(`(recalc early=${LOOP_SEEK_EARLY_TICKS}t ~${ticksToMs(LOOP_SEEK_EARLY_TICKS)}ms)`);
+            updateLoopMasks();
+
+
+        });
+        api.midiLoaded.on(()=>{ LOOP_SEEK_EARLY_TICKS = msToTicks(EARLY_MS); updateDebug(`(recalc early=${LOOP_SEEK_EARLY_TICKS}t ~${ticksToMs(LOOP_SEEK_EARLY_TICKS)}ms)`); });
+
+        /* =========================
+           Strict key mapping + enharmonics
+           ========================= */
+
+        // --- Key name helpers (written key dropdown) ---
+        const KEYNAME_TO_KS = {
+            'C':0,'G':1,'D':2,'A':3,'E':4,'B':5,'F#':6,'C#':7,
+            'F':-1,'Bb':-2,'Eb':-3,'Ab':-4,'Db':-5,'Gb':-6,'Cb':-7
+        };
 // Pitch class of the tonic for each major key (C=0 … B=11)
-      const KEYNAME_TO_PC = {
-          'C':0,'G':7,'D':2,'A':9,'E':4,'B':11,'F#':6,'C#':1,
-          'F':5,'Bb':10,'Eb':3,'Ab':8,'Db':1,'Gb':6,'Cb':11
-      };
+        const KEYNAME_TO_PC = {
+            'C':0,'G':7,'D':2,'A':9,'E':4,'B':11,'F#':6,'C#':1,
+            'F':5,'Bb':10,'Eb':3,'Ab':8,'Db':1,'Gb':6,'Cb':11
+        };
 
 // Force the score's written key to match the dropdown (no re-render if not needed)
-      function setScoreKeyFromDropdown(){
-          try{
-              const name = (compKey?.value || '').trim();
-              if (!name) return;
-              const ks = KEYNAME_TO_KS[name];
-              if (typeof ks === 'number') setScoreKeySignatureVal(ks);
-          } catch(e){ console.warn('setScoreKeyFromDropdown failed', e); }
-      }
+        function setScoreKeyFromDropdown(){
+            try{
+                const name = (compKey?.value || '').trim();
+                if (!name) return;
+                const ks = KEYNAME_TO_KS[name];
+                if (typeof ks === 'number') setScoreKeySignatureVal(ks);
+            } catch(e){ console.warn('setScoreKeyFromDropdown failed', e); }
+        }
 
-    // Sharps preference: C#, F#, B
-    const PC_TO_KS_SHARPS = { 0:0, 1:7, 2:2, 3:-3, 4:4, 5:-1, 6:6, 7:1, 8:-4, 9:3, 10:-2, 11:5 };
-    // Flats  preference: Db, Gb, Cb
-    const PC_TO_KS_FLATS  = { 0:0, 1:-5, 2:2, 3:-3, 4:4, 5:-1, 6:-6, 7:1, 8:-4, 9:3, 10:-2, 11:-7 };
+        // Sharps preference: C#, F#, B
+        const PC_TO_KS_SHARPS = { 0:0, 1:7, 2:2, 3:-3, 4:4, 5:-1, 6:6, 7:1, 8:-4, 9:3, 10:-2, 11:5 };
+        // Flats  preference: Db, Gb, Cb
+        const PC_TO_KS_FLATS  = { 0:0, 1:-5, 2:2, 3:-3, 4:4, 5:-1, 6:-6, 7:1, 8:-4, 9:3, 10:-2, 11:-7 };
 
-      // Pitch-class → key-name maps for display
-      const PC_TO_NAME_SHARPS = { 0:'C', 1:'C#', 2:'D', 3:'D#', 4:'E', 5:'F', 6:'F#', 7:'G', 8:'G#', 9:'A', 10:'A#', 11:'B' };
-      const PC_TO_NAME_FLATS  = { 0:'C', 1:'Db', 2:'D', 3:'Eb', 4:'E', 5:'F', 6:'Gb', 7:'G', 8:'Ab', 9:'A', 10:'Bb', 11:'B' };
+        // Pitch-class → key-name maps for display
+        const PC_TO_NAME_SHARPS = { 0:'C', 1:'C#', 2:'D', 3:'D#', 4:'E', 5:'F', 6:'F#', 7:'G', 8:'G#', 9:'A', 10:'A#', 11:'B' };
+        const PC_TO_NAME_FLATS  = { 0:'C', 1:'Db', 2:'D', 3:'Eb', 4:'E', 5:'F', 6:'Gb', 7:'G', 8:'Ab', 9:'A', 10:'Bb', 11:'B' };
 
 // Compute & show current key (adapts to transposition and enharmonic preference)
-      function updateCurrentKeyUI(){
-          try{
-              if (!keyDisplay) return;
-              // Base = dropdown key if set, otherwise C
-              const hasKey = !!(compKey && compKey.value && compKey.value.trim());
-              const baseName = hasKey ? compKey.value.trim() : 'C';
-              const basePc = KEYNAME_TO_PC[baseName];
-              const semi = (typeof STATE?.transposeSemis === 'number') ? STATE.transposeSemis : 0;
-              const pc = (((basePc ?? 0) + ((semi % 12) + 12) % 12) % 12);
-              const map = STATE.preferFlats ? PC_TO_NAME_FLATS : PC_TO_NAME_SHARPS;
+        function updateCurrentKeyUI(){
+            try{
+                if (!keyDisplay) return;
+                // Base = dropdown key if set, otherwise C
+                const hasKey = !!(compKey && compKey.value && compKey.value.trim());
+                const baseName = hasKey ? compKey.value.trim() : 'C';
+                const basePc = KEYNAME_TO_PC[baseName];
+                const semi = (typeof STATE?.transposeSemis === 'number') ? STATE.transposeSemis : 0;
+                const pc = (((basePc ?? 0) + ((semi % 12) + 12) % 12) % 12);
+                const map = STATE.preferFlats ? PC_TO_NAME_FLATS : PC_TO_NAME_SHARPS;
 
-              let name = map[pc] || 'C';
-              const relMinorOn = !!(relMinorToggle && relMinorToggle.checked);
-              if (relMinorOn){
-                  // Relative minor tonic is major tonic - 3 semitones (≡ +9)
-                  const mPc = (pc + 9) % 12;
-                  name = map[mPc] || name;
-                  keyDisplay.textContent = name + ' minor';
-              } else {
-                  keyDisplay.textContent = name + ' major';
-              }
-          } catch(e){ console.warn('updateCurrentKeyUI failed', e); }
-      }
-    const clampSemis = (val) => Math.max(-12, Math.min(12, Math.trunc(val)));
-    const reflectTransposeUI = (val) => { if (transposeVal) transposeVal.textContent = String(val); };
-
-    function computePreferredKSAfterTranspose(semi){
-      const n = ((semi % 12) + 12) % 12; // normalize negatives
-      const map = STATE.preferFlats ? PC_TO_KS_FLATS : PC_TO_KS_SHARPS;
-      return map[n] ?? 0;
-    }
-    function setScoreKeySignatureVal(val){
-      try {
-        const score = api.score; if (!score) return;
-        let current = (typeof score.keySignature === 'number') ? score.keySignature : null;
-        if (current == null && Array.isArray(score.masterBars) && score.masterBars.length) {
-          current = score.masterBars[0].keySignature;
+                let name = map[pc] || 'C';
+                const relMinorOn = !!(relMinorToggle && relMinorToggle.checked);
+                if (relMinorOn){
+                    // Relative minor tonic is major tonic - 3 semitones (≡ +9)
+                    const mPc = (pc + 9) % 12;
+                    name = map[mPc] || name;
+                    keyDisplay.textContent = name + ' minor';
+                } else {
+                    keyDisplay.textContent = name + ' major';
+                }
+            } catch(e){ console.warn('updateCurrentKeyUI failed', e); }
         }
-        if (current === val) return;
-        if (typeof score.keySignature === 'number') score.keySignature = val;
-        if (Array.isArray(score.masterBars)){
-          for (const mb of score.masterBars){ mb.keySignature = val; }
+        const clampSemis = (val) => Math.max(-12, Math.min(12, Math.trunc(val)));
+        const reflectTransposeUI = (val) => { if (transposeVal) transposeVal.textContent = String(val); };
+
+        function computePreferredKSAfterTranspose(semi){
+            const n = ((semi % 12) + 12) % 12; // normalize negatives
+            const map = STATE.preferFlats ? PC_TO_KS_FLATS : PC_TO_KS_SHARPS;
+            return map[n] ?? 0;
         }
-        try { api.updateSyncPoints(); } catch(_) {}
-      } catch(e){ console.warn('setScoreKeySignatureVal failed', e); }
-    }
-
-    function applyNotationTranspose(semi){
-      const clamped = clampSemis(semi);
-      if (clamped !== STATE.transposeSemis){
-        STATE.transposeSemis = clamped;
-        try { localStorage.setItem('notationTranspose', String(STATE.transposeSemis)); } catch {}
-      }
-      reflectTransposeUI(STATE.transposeSemis);
-
-      // 1) Playback transpose (fast param change)
-      try {
-        const tracks = Array.isArray(api.tracks) ? api.tracks : [];
-        if (tracks.length > 0 && typeof api.changeTrackTranspositionPitch === 'function') {
-          api.changeTrackTranspositionPitch(tracks, STATE.transposeSemis);
+        function setScoreKeySignatureVal(val){
+            try {
+                const score = api.score; if (!score) return;
+                let current = (typeof score.keySignature === 'number') ? score.keySignature : null;
+                if (current == null && Array.isArray(score.masterBars) && score.masterBars.length) {
+                    current = score.masterBars[0].keySignature;
+                }
+                if (current === val) return;
+                if (typeof score.keySignature === 'number') score.keySignature = val;
+                if (Array.isArray(score.masterBars)){
+                    for (const mb of score.masterBars){ mb.keySignature = val; }
+                }
+                try { api.updateSyncPoints(); } catch(_) {}
+            } catch(e){ console.warn('setScoreKeySignatureVal failed', e); }
         }
-      } catch (e) { console.warn('transpose playback failed', e); }
 
-      // 2) Notation transpose + optional key signature change
-      try {
-        const s = api.settings || (api.settings = {});
-        s.notation = s.notation || {};
-
-        const rendered = (api.tracks && api.tracks.length) ? api.tracks.length : 0;
-        const total    = (api.score && api.score.tracks && api.score.tracks.length) ? api.score.tracks.length : 0;
-        const nTracks  = Math.max(rendered, total, 1);
-        const next     = Array.from({ length: nTracks }, () => STATE.transposeSemis);
-        const prev     = Array.isArray(s.notation.transpositionPitches) ? s.notation.transpositionPitches : [];
-        const sameArr  = prev.length === next.length && prev.every((v,i)=>v===next[i]);
-
-        s.notation.transposeKeySignatures = !!STATE.keySigOn;
-        if (!sameArr) s.notation.transpositionPitches = next;
-
-        api.updateSettings();
-
-          if (s.notation.transposeKeySignatures){
-              let targetKS = null;
-              const hasKeyInUI = !!(typeof compKey !== 'undefined' && compKey && compKey.value && compKey.value.trim());
-              if (hasKeyInUI) {
-                  const baseName = compKey.value.trim();
-                  const basePc = KEYNAME_TO_PC[baseName];
-                  if (typeof basePc === 'number') {
-                      const n = ((basePc + ((STATE.transposeSemis % 12)+12)%12) % 12); // transposed tonic PC
-                      const map = STATE.preferFlats ? PC_TO_KS_FLATS : PC_TO_KS_SHARPS;
-                      targetKS = map[n] ?? 0;
-                  }
-              }
-              if (targetKS == null) {
-                  // Fallback when no dropdown key: behave like before
-                  targetKS = computePreferredKSAfterTranspose(STATE.transposeSemis);
-              }
-              setScoreKeySignatureVal(targetKS);
-          }
-          updateCurrentKeyUI();
-        try { api.render(); } catch {}
-      } catch (e) { console.warn('transpose notation failed', e); }
-
-      // 3) Rebuild MIDI to reflect the new transpose immediately without needing a tempo nudge.
-      //    If we were playing, resume automatically; if paused, do not auto-start.
-      if (api?.player) {
-        const wasPlaying = api.player.state === alphaTab.synth.PlayerState.Playing;
-        if (wasPlaying) {
-          regenMidiDebouncedPlay();
-        } else {
-          regenMidiDebouncedSilent();
-        }
-      }
-    }
-
-    /* =========================
-       UI wiring
-       ========================= */
-    // theme
-    (function initTheme(){
-      const saved = localStorage.getItem('alphatabTheme');
-      STATE.isDark = saved ? (saved === 'dark') : false;
-      darkMode.checked = STATE.isDark;
-      document.body.classList.toggle('dark', STATE.isDark);
-    })();
-    darkMode.addEventListener('change', () => {
-      STATE.isDark = !!darkMode.checked;
-      document.body.classList.toggle('dark', STATE.isDark);
-      localStorage.setItem('alphatabTheme', STATE.isDark ? 'dark' : 'light');
-      try {
-        if (api?.score) {
-          applyDarkNotationalStyles(api.score, STATE.isDark);
-          colorScoreByPitch(api.score);
-          api.updateSettings();
-          api.render();
-        }
-      } catch {}
-    });
-    // SoundFont selector wiring
-    if (sfSelect) {
-      sfSelect.addEventListener('change', () => {
-        const choice = sfSelect.value;
-        try { localStorage.setItem('sfChoice', choice); } catch {}
-        applySoundFontChoice(choice);
-      });
-    }
-
-    // Metronome
-    const savedMetroVol = parseFloat(localStorage.getItem('metroVol') || '0');
-    if (!isNaN(savedMetroVol)) {
-      metroVol.value = String(savedMetroVol);
-      try { api.metronomeVolume = savedMetroVol; } catch {}
-      metroToggle.checked = savedMetroVol > 0;
-    }
-
-    metroToggle.addEventListener('change', () => {
-      const on = !!metroToggle.checked;
-      const vol = on ? (parseFloat(metroVol.value) || 0.5) : 0;
-      try { api.metronomeVolume = vol; } catch {}
-      try { localStorage.setItem('metroVol', String(vol)); } catch {}
-      if (on && vol === 0) { metroVol.value = '0.5'; } // ensure audible
-    });
-
-    metroVol.addEventListener('input', () => {
-      const v = parseFloat(metroVol.value) || 0;
-      try { api.metronomeVolume = v; } catch {}
-      try { localStorage.setItem('metroVol', String(v)); } catch {}
-      metroToggle.checked = v > 0;
-    });
-
-    // tempo
-    tempoVal.textContent = tempoSlider.value;
-
-    // Realtime tempo control: change speed during playback without pausing or re-rendering
-    const updatePlaybackSpeedFromBpm = (bpmVal) => {
-      const base = STATE.baseBpm > 0 ? STATE.baseBpm : CONFIG.DEFAULT_BPM;
-      const target = parseInt(bpmVal, 10) || base;
-      const ratio = Math.max(0.25, Math.min(4, target / base)); // clamp 25%..400%
-      try { api.playbackSpeed = ratio; } catch {}
-      STATE.currentBpm = target;
-      tempoVal.textContent = String(target);
-      if (compTempo) compTempo.value = String(target);
-    };
-
-    // Live updates while dragging the slider
-    tempoSlider.addEventListener('input', () => {
-      updatePlaybackSpeedFromBpm(tempoSlider.value);
-      tempoSlider.dataset.touched = '1';
-    });
-
-    // On release, just persist — no re-render, no pause
-    tempoSlider.addEventListener('change', () => {
-      updatePlaybackSpeedFromBpm(tempoSlider.value);
-      try { localStorage.setItem('comp.tempo', String(STATE.currentBpm)); } catch {}
-    });
-
-    // Composer persistence & wiring
-    const LS_KEYS = { t:'comp.title', k:'comp.key', b:'comp.body', a:'comp.auto', m:'comp.tempo' };
-    function loadComposer(){
-      try {
-        const t = localStorage.getItem(LS_KEYS.t) || '';
-        const k = localStorage.getItem(LS_KEYS.k) || '';
-        const b = localStorage.getItem(LS_KEYS.b) || '';
-        const a = localStorage.getItem(LS_KEYS.a) === '1';
-        const m = parseInt(localStorage.getItem(LS_KEYS.m) || `${CONFIG.DEFAULT_BPM}`, 10) || CONFIG.DEFAULT_BPM;
-        if (compTitle) compTitle.value = t;
-        // Set compKey.value to k or default to 'C' if k is falsy/empty
-        if (compKey)   compKey.value   = k || 'C';
-        if (compBody)  compBody.value  = b;
-        if (compAuto)  compAuto.checked = a;
-        if (compTempo) compTempo.value = String(m);
-      } catch {}
-    }
-    function saveComposer(){
-      try {
-        if (compTitle) localStorage.setItem(LS_KEYS.t, compTitle.value||'');
-        if (compKey)   localStorage.setItem(LS_KEYS.k, compKey.value||'');
-        if (compBody)  localStorage.setItem(LS_KEYS.b, compBody.value||'');
-        if (compAuto)  localStorage.setItem(LS_KEYS.a, compAuto.checked ? '1':'0');
-        if (compTempo) localStorage.setItem(LS_KEYS.m, String(parseInt(compTempo.value||`${CONFIG.DEFAULT_BPM}`,10)||CONFIG.DEFAULT_BPM));
-      } catch {}
-    }
-    loadComposer();
-
-    if (compApply) compApply.addEventListener('click', ()=>{ saveComposer(); renderFromUI(); });
-    if (compAuto)  compAuto.addEventListener('change', saveComposer);
-    ['input','change'].forEach(evt=>{
-      if (compTitle) compTitle.addEventListener(evt, ()=>{ if (compAuto?.checked) renderFromUI(); saveComposer(); });
-      if (compKey)   compKey.addEventListener(evt,   ()=>{
-            if (compAuto?.checked) {
-                renderFromUI(); // full rebuild using \key
-            } else {
-                // update written key in-place without a full rebuild
-                try { setScoreKeyFromDropdown(); api.render(); } catch {}
+        function applyNotationTranspose(semi){
+            const clamped = clampSemis(semi);
+            if (clamped !== STATE.transposeSemis){
+                STATE.transposeSemis = clamped;
+                try { localStorage.setItem('notationTranspose', String(STATE.transposeSemis)); } catch {}
             }
-          updateCurrentKeyUI();
-            saveComposer();
+            reflectTransposeUI(STATE.transposeSemis);
+
+            // 1) Playback transpose (fast param change)
+            try {
+                const tracks = Array.isArray(api.tracks) ? api.tracks : [];
+                if (tracks.length > 0 && typeof api.changeTrackTranspositionPitch === 'function') {
+                    api.changeTrackTranspositionPitch(tracks, STATE.transposeSemis);
+                }
+            } catch (e) { console.warn('transpose playback failed', e); }
+
+            // 2) Notation transpose + optional key signature change
+            try {
+                const s = api.settings || (api.settings = {});
+                s.notation = s.notation || {};
+
+                const rendered = (api.tracks && api.tracks.length) ? api.tracks.length : 0;
+                const total    = (api.score && api.score.tracks && api.score.tracks.length) ? api.score.tracks.length : 0;
+                const nTracks  = Math.max(rendered, total, 1);
+                const next     = Array.from({ length: nTracks }, () => STATE.transposeSemis);
+                const prev     = Array.isArray(s.notation.transpositionPitches) ? s.notation.transpositionPitches : [];
+                const sameArr  = prev.length === next.length && prev.every((v,i)=>v===next[i]);
+
+                s.notation.transposeKeySignatures = !!STATE.keySigOn;
+                if (!sameArr) s.notation.transpositionPitches = next;
+
+                api.updateSettings();
+
+                if (s.notation.transposeKeySignatures){
+                    let targetKS = null;
+                    const hasKeyInUI = !!(typeof compKey !== 'undefined' && compKey && compKey.value && compKey.value.trim());
+                    if (hasKeyInUI) {
+                        const baseName = compKey.value.trim();
+                        const basePc = KEYNAME_TO_PC[baseName];
+                        if (typeof basePc === 'number') {
+                            const n = ((basePc + ((STATE.transposeSemis % 12)+12)%12) % 12); // transposed tonic PC
+                            const map = STATE.preferFlats ? PC_TO_KS_FLATS : PC_TO_KS_SHARPS;
+                            targetKS = map[n] ?? 0;
+                        }
+                    }
+                    if (targetKS == null) {
+                        // Fallback when no dropdown key: behave like before
+                        targetKS = computePreferredKSAfterTranspose(STATE.transposeSemis);
+                    }
+                    setScoreKeySignatureVal(targetKS);
+                }
+                updateCurrentKeyUI();
+                try { api.render(); } catch {}
+            } catch (e) { console.warn('transpose notation failed', e); }
+
+            // 3) Rebuild MIDI to reflect the new transpose immediately without needing a tempo nudge.
+            //    If we were playing, resume automatically; if paused, do not auto-start.
+            if (api?.player) {
+                const wasPlaying = api.player.state === alphaTab.synth.PlayerState.Playing;
+                if (wasPlaying) {
+                    regenMidiDebouncedPlay();
+                } else {
+                    regenMidiDebouncedSilent();
+                }
+            }
+        }
+
+        /* =========================
+           UI wiring
+           ========================= */
+        // theme
+        (function initTheme(){
+            const saved = localStorage.getItem('alphatabTheme');
+            STATE.isDark = saved ? (saved === 'dark') : false;
+            darkMode.checked = STATE.isDark;
+            document.body.classList.toggle('dark', STATE.isDark);
+        })();
+        darkMode.addEventListener('change', () => {
+            STATE.isDark = !!darkMode.checked;
+            document.body.classList.toggle('dark', STATE.isDark);
+            localStorage.setItem('alphatabTheme', STATE.isDark ? 'dark' : 'light');
+            try {
+                if (api?.score) {
+                    applyDarkNotationalStyles(api.score, STATE.isDark);
+                    colorScoreByPitch(api.score);
+                    api.updateSettings();
+                    api.render();
+                }
+            } catch {}
         });
-      if (compBody)  compBody.addEventListener(evt,  ()=>{ if (compAuto?.checked) renderFromUI(); saveComposer(); });
-      if (compTempo) compTempo.addEventListener(evt, ()=>{ const v=parseInt(compTempo.value||`${CONFIG.DEFAULT_BPM}`,10)||CONFIG.DEFAULT_BPM; tempoSlider.value=String(v); tempoVal.textContent=String(v); if (compAuto?.checked) renderFromUI(v); saveComposer(); });
-    });
-
-    // opacity
-    opacityVal.textContent = parseFloat(opacitySlider.value).toFixed(2);
-    opacitySlider.addEventListener('input', () => {
-      STATE.normalNoteDimFactor = parseFloat(opacitySlider.value) || 0;
-      opacityVal.textContent = STATE.normalNoteDimFactor.toFixed(2);
-      if (STATE.USE_INLINE_COLORING && api.score) { colorScoreByPitch(api.score); api.render(); }
-    });
-
-    // layout paddings
-    const applyLayoutPadding = () => {
-      try {
-        const s = api.settings;
-        if (!s?.display) return;
-        if (chordSpace) {
-          const vTop = parseInt(chordSpace.value,10) || 0;
-          s.display.effectStaffPaddingBottom = vTop;
-          s.display.notationStaffPaddingTop = Math.max(0, Math.round(vTop * 0.8));
-          chordVal.textContent = `${vTop}px`;
+        // SoundFont selector wiring
+        if (sfSelect) {
+            sfSelect.addEventListener('change', () => {
+                const choice = sfSelect.value;
+                try { localStorage.setItem('sfChoice', choice); } catch {}
+                applySoundFontChoice(choice);
+            });
         }
-        if (dynSpace) {
-          const vBot = parseInt(dynSpace.value,10) || 0;
-          s.display.effectStaffPaddingTop = vBot;
-          s.display.notationStaffPaddingBottom = Math.max(0, Math.round(vBot * 0.875));
-          dynVal.textContent = `${vBot}px`;
+
+        // Metronome
+        const savedMetroVol = parseFloat(localStorage.getItem('metroVol') || '0');
+        if (!isNaN(savedMetroVol)) {
+            metroVol.value = String(savedMetroVol);
+            try { api.metronomeVolume = savedMetroVol; } catch {}
+            metroToggle.checked = savedMetroVol > 0;
         }
-        api.updateSettings(s); api.render();
-      } catch (e) { console.warn('applyLayoutPadding failed:', e); }
-    };
-    chordSpace.addEventListener('input', applyLayoutPadding);
-    dynSpace.addEventListener('input', applyLayoutPadding);
 
-    // HSV + assist
-    const refreshStaticHlUI = () => {
-      hlHVal.textContent = hlH.value; hlSVal.textContent = hlS.value; hlVVal.textContent = hlV.value;
-      setHighlightColor(getStaticHlHex());
-    };
-    refreshStaticHlUI();
-    [hlH,hlS,hlV].forEach(sl => sl.addEventListener('input', refreshStaticHlUI));
-
-      hlAssist.addEventListener('change', () => {
-          setBuiltinHighlighting(false); // avoid built-in flashing highlight (prevents flicker)
-          setHighlightColor(getStaticHlHex());
-      });
-
-    // transport
-    btnPlay.onclick = () => {
-      api.playPause();
-      clearHighlightedNote();
-    };
-    btnStop.onclick = () => api.stop();
-
-
-
-
-    // transpose UI
-    reflectTransposeUI(STATE.transposeSemis);
-    if (tDown)  tDown.addEventListener('click', () => applyNotationTranspose(clampSemis((STATE.transposeSemis||0) - 1)));
-    if (tUp)    tUp.addEventListener('click', () => applyNotationTranspose(clampSemis((STATE.transposeSemis||0) + 1)));
-    if (tReset) tReset.addEventListener('click', () => applyNotationTranspose(0));
-
-    if (keySigToggle){
-      keySigToggle.checked = STATE.keySigOn;
-      keySigToggle.addEventListener('change', () => {
-        STATE.keySigOn = keySigToggle.checked;
-        try { localStorage.setItem('keySigToggle', STATE.keySigOn ? '1' : '0'); } catch {}
-        applyNotationTranspose(STATE.transposeSemis);
-      });
-    }
-    if (enhToggle){
-      enhToggle.checked = STATE.preferFlats;
-      enhToggle.addEventListener('change', () => {
-        STATE.preferFlats = enhToggle.checked;
-        try { localStorage.setItem('enhPreferFlats', STATE.preferFlats ? '1' : '0'); } catch {}
-        applyNotationTranspose(STATE.transposeSemis);
-          updateCurrentKeyUI();
-      });
-    }
-
-      // Relative minor toggle persistence + wiring
-      (function initRelMinor(){
-          try {
-              const saved = localStorage.getItem('showRelativeMinor');
-              if (relMinorToggle) relMinorToggle.checked = (saved === '1');
-          } catch {}
-          updateCurrentKeyUI();
-      })();
-      if (relMinorToggle){
-          relMinorToggle.addEventListener('change', () => {
-              try { localStorage.setItem('showRelativeMinor', relMinorToggle.checked ? '1' : '0'); } catch {}
-              updateCurrentKeyUI();
-          });
-      }
-    /* =========================
-       AlphaTab events
-       ========================= */
-    api.error.on(err => {
-      console.error('[AlphaTab error]', err);
-      try { status.textContent = 'AlphaTab error: ' + (err?.message || err); } catch {}
-    });
-
-    api.soundFontLoad.on(e => {
-      const pct = Math.floor((e.loaded / e.total) * 100);
-      status.textContent = `Loading soundfont… ${pct}%`;
-    });
-
-    api.playerReady.on(() => {
-      status.textContent = 'Ready';
-      btnStop.disabled = false;
-      btnPlay.disabled = false;
-      try { applyLoopUI(loadLoopPref()); } catch(_) {}
-      // Re-apply metronome to be safe after player ready
-      try { api.metronomeVolume = parseFloat(localStorage.getItem('metroVol') || '0') || 0; } catch {}
-      if (!STATE.baseBpm || STATE.baseBpm <= 0) STATE.baseBpm = STATE.currentBpm;
-    });
-
-    // tick cache warm
-    api.midiLoad.on(() => { STATE.tickCacheReady = true; if (STATE.pendingAccentOnWarm && api?.player?.state === alphaTab.synth.PlayerState.Playing) { STATE.pendingAccentOnWarm = false; accentAtCurrentTick(); } });
-    api.midiLoaded.on(() => { STATE.tickCacheReady = true; if (STATE.pendingAccentOnWarm && api?.player?.state === alphaTab.synth.PlayerState.Playing) { STATE.pendingAccentOnWarm = false; accentAtCurrentTick(); } });
-
-    api.playerStateChanged.on(e => {
-      const playing = e.state === alphaTab.synth.PlayerState.Playing;
-      btnPlay.textContent = playing ? 'Pause' : 'Play';
-      if (playing) {
-        if (STATE.customLoopEnabled && STATE.loopStartTick != null) ensureSeekToLoopStart();
-        if (STATE.tickCacheReady) {
-          STATE.tickHint = null;
-          accentAtCurrentTick();
-        } else {
-          STATE.pendingAccentOnWarm = true;
-        }
-      } else {
-        STATE.pendingAccentOnWarm = false;
-      }
-      updateDebug('state:'+e.state);
-    });
-
-    api.playerPositionChanged.on(e => {
-      pos.textContent = `${fmtTime(e.currentTime)} / ${fmtTime(e.endTime)}`;
-      updateDebug();
-      if (STATE.customLoopEnabled && STATE.loopStartTick != null && STATE.loopEndTick != null) {
-        const ct = typeof e.currentTick === 'number' ? e.currentTick : null;
-        if (ct != null && ct >= (STATE.loopEndTick - STATE.LOOP_SEEK_EARLY_TICKS)) {
-          ensureSeekToLoopStart();
-        }
-      }
-      // inline accent coloring
-      if (!STATE.USE_INLINE_COLORING || !STATE.tickCacheReady) return;
-      const tick = e?.currentTick;
-      const cache = api.tickCache;
-      if (!cache || typeof tick !== 'number') return;
-      const res = cache.findBeat(getTrackSet(), tick, STATE.tickHint);
-      if (!res) return; STATE.tickHint = res;
-      const beat = res.beat; if (!beat) return;
-      const scoreBeat = (beat.notes ? beat : findBeatInScore(api.score, beat)) || beat;
-      if (STATE.lastBeatAccented === scoreBeat) return;
-      if (STATE.lastBeatAccented) recolorBeat(STATE.lastBeatAccented);
-      accentBeat(scoreBeat);
-      setCursorColorToBeat(scoreBeat);
-      STATE.lastBeatAccented = scoreBeat;
-      try { api.render(); } catch {}
-    });
-
-    api.playerStateChanged.on(e => {
-      if (e.state !== alphaTab.synth.PlayerState.Playing) {
-        STATE.pendingAccentOnWarm = false;
-        if (STATE.lastBeatAccented) {
-          recolorBeat(STATE.lastBeatAccented);
-          STATE.lastBeatAccented = null;
-          STATE.tickHint = null;
-          try { api.render(); } catch {}
-        }
-      }
-    });
-
-    api.scoreLoaded.on(score => {
-      applyDarkNotationalStyles(api.score, STATE.isDark);
-      if (STATE.USE_INLINE_COLORING) colorScoreByPitch(api.score);
-      setHighlightColor(getStaticHlHex());
-      setBuiltinHighlighting(hlAssist.checked);
-        try { setScoreKeyFromDropdown(); } catch {}
-        updateCurrentKeyUI();
-      if (!tempoSlider.dataset.touched) { tempoSlider.value = STATE.currentBpm; tempoVal.textContent = STATE.currentBpm; }
-      if (!tempoSlider.dataset.touched) { STATE.baseBpm = STATE.currentBpm; }
-      try {
-        const s = api.settings?.display || {};
-        if (Number.isFinite(s.effectStaffPaddingBottom)) { chordSpace.value = String(s.effectStaffPaddingBottom); chordVal.textContent = s.effectStaffPaddingBottom + 'px'; }
-        if (Number.isFinite(s.effectStaffPaddingTop)) { dynSpace.value = String(s.effectStaffPaddingTop); dynVal.textContent = s.effectStaffPaddingTop + 'px'; }
-      } catch {}
-      STATE.tickCacheReady = false; STATE.tickHint = null;
-      const prewarm = () => { try { api.loadMidiForScore(); } catch(_) {} };
-      if (api.isReadyForPlayback) prewarm(); else { const once = () => { api.playerReady.off(once); prewarm(); }; api.playerReady.on(once); }
-      // Loop: handled via playbackRange now
-      // apply current transpose to both audio + display (and key if enabled)
-      applyNotationTranspose(STATE.transposeSemis);
-      api.render();
-      updateDebug('scoreLoaded');
-      highlightNotesList = [];
-        for (const track of score.tracks)
-          for (const staff of track.staves)
-            for (const bar of staff.bars)
-              for (const voice of bar.voices)
-                for (const beat of voice.beats)
-                  for (const note of beat.notes || []) {
-                    highlightNotesList.push({ note, beat });
-                  }
-        highlightedNoteIdx = -1;
-    });
-  // Clear the highlighted note
-    function clearHighlightedNote() {
-  // Remove accent from previously highlighted beat
-  if (highlightedNoteIdx >= 0 && highlightNotesList[highlightedNoteIdx]) {
-    const { beat } = highlightNotesList[highlightedNoteIdx];
-    if (beat) recolorBeat(beat); // revert to normal color+opacity
-  }
-  highlightedNoteIdx = -1;
-  try { api.render(); } catch {}
-}
-
-function highlightNoteAt(idx) {
-  clearHighlightedNote();
-  if (highlightNotesList.length === 0) return;
-  highlightedNoteIdx = ((idx % highlightNotesList.length) + highlightNotesList.length) % highlightNotesList.length;
-  const { note, beat } = highlightNotesList[highlightedNoteIdx];
-  if (!note || !beat) return;
-
-  // 1) Visual accent (unchanged)
-  accentBeat(beat);
-
-  // 2) Move playhead to this beat without stopping playback
-  try {
-    // Prefer exact conversion via tick cache if available
-    const tc = api.tickCache ?? api.boundsLookup ?? null;
-    let targetTick = null;
-    if (typeof beat.timer === 'number') {
-      if (tc && typeof tc.timeToTick === 'function') {
-        targetTick = tc.timeToTick(Math.max(0, beat.timer));
-      } else {
-        // Fallback: estimate ticks from ms using total duration ratios
-        const durMs = api?.player?.endTime ?? api?.score?.playTime ?? null;
-        const durTicks = api?.score?.duration ?? null;
-        if (durMs && durTicks) targetTick = Math.round((beat.timer / durMs) * durTicks);
-      }
-    }
-    if (typeof targetTick === 'number' && isFinite(targetTick)) {
-      const wasPlaying = api?.player?.state === alphaTab.synth.PlayerState.Playing;
-      api.tickPosition = Math.max(0, targetTick);
-      try { api.scrollToCursor(); } catch {}
-      // preserve prior state (do not force play/pause changes)
-      if (wasPlaying) {
-        // nudge the renderer so the colored accent stays in sync
-        try { api.render(); } catch {}
-      }
-    }
-  } catch {}
-
-  try { api.render(); } catch {}
-}
-
-
-    // MIDI-driven highlight color when assist is ON
-    try {
-      if (api.midiEventsPlayed && 'midiEventsPlayedFilter' in api && alphaTab?.midi?.MidiEventType) {
-        api.midiEventsPlayedFilter = [alphaTab.midi.MidiEventType.NoteOn];
-        api.midiEventsPlayed.on(e => { if (!hlAssist.checked) return; // only when assist active
-          // color by top midi pitch of the batch
-          let best = null;
-          for (const ev of e.events || []) {
-            const type = ev.type || ev.eventType || ev.kind;
-            const isNoteOn = type === alphaTab?.midi?.MidiEventType?.NoteOn || ev.isNoteOn;
-            if (!isNoteOn) continue;
-            const n = ev.note ?? ev.noteNumber ?? ev.key ?? ev.data1;
-            if (typeof n !== 'number') continue;
-            if (best == null || n > best) best = n;
-          }
-          if (best != null) {
-            const semi = (typeof STATE?.transposeSemis === 'number') ? STATE.transposeSemis : 0;
-            setHighlightColor(pcColor(best + semi));
-          }
+        metroToggle.addEventListener('change', () => {
+            const on = !!metroToggle.checked;
+            const vol = on ? (parseFloat(metroVol.value) || 0.5) : 0;
+            try { api.metronomeVolume = vol; } catch {}
+            try { localStorage.setItem('metroVol', String(vol)); } catch {}
+            if (on && vol === 0) { metroVol.value = '0.5'; } // ensure audible
         });
-      }
-    } catch {}
 
-    // Play/pause helpers
-    const accentAtCurrentTick = () => {
-      if (!STATE.USE_INLINE_COLORING) return;
-      if (!STATE.tickCacheReady) return;
-      const cache = api.tickCache;
-      const tick = typeof api.tickPosition === 'number' ? api.tickPosition : undefined;
-      if (!cache || typeof tick !== 'number') return;
-      const res = cache.findBeat(getTrackSet(), tick, STATE.tickHint);
-      if (!res || !res.beat) return;
-      STATE.tickHint = res;
-      const b = res.beat;
-      const scoreBeat = (b.notes ? b : findBeatInScore(api.score, b)) || b;
-      if (STATE.lastBeatAccented && STATE.lastBeatAccented !== scoreBeat) recolorBeat(STATE.lastBeatAccented);
-      accentBeat(scoreBeat);
-      STATE.lastBeatAccented = scoreBeat;
-      api.render();
-    };
+        metroVol.addEventListener('input', () => {
+            const v = parseFloat(metroVol.value) || 0;
+            try { api.metronomeVolume = v; } catch {}
+            try { localStorage.setItem('metroVol', String(v)); } catch {}
+            metroToggle.checked = v > 0;
+        });
 
-    // ---- Notation wrapper height: drag-to-resize + persistence
-    const LS_NOTATION_HEIGHT = 'notationWrap.heightPx';
-    (function initNotationHeight(){
-      try {
-        const saved = parseInt(localStorage.getItem(LS_NOTATION_HEIGHT), 10);
-        if (!isNaN(saved) && saved >= 200) notationWrap.style.height = saved + 'px';
-      } catch {}
+        // tempo
+        tempoVal.textContent = tempoSlider.value;
+
+        // Realtime tempo control: change speed during playback without pausing or re-rendering
+        const updatePlaybackSpeedFromBpm = (bpmVal) => {
+            const base = STATE.baseBpm > 0 ? STATE.baseBpm : CONFIG.DEFAULT_BPM;
+            const target = parseInt(bpmVal, 10) || base;
+            const ratio = Math.max(0.25, Math.min(4, target / base)); // clamp 25%..400%
+            try { api.playbackSpeed = ratio; } catch {}
+            STATE.currentBpm = target;
+            tempoVal.textContent = String(target);
+            if (compTempo) compTempo.value = String(target);
+        };
+
+        // Live updates while dragging the slider
+        tempoSlider.addEventListener('input', () => {
+            updatePlaybackSpeedFromBpm(tempoSlider.value);
+            tempoSlider.dataset.touched = '1';
+        });
+
+        // On release, just persist — no re-render, no pause
+        tempoSlider.addEventListener('change', () => {
+            updatePlaybackSpeedFromBpm(tempoSlider.value);
+            try { localStorage.setItem('comp.tempo', String(STATE.currentBpm)); } catch {}
+        });
+
+        // Composer persistence & wiring
+        const LS_KEYS = { t:'comp.title', k:'comp.key', b:'comp.body', a:'comp.auto', m:'comp.tempo' };
+        function loadComposer(){
+            try {
+                const t = localStorage.getItem(LS_KEYS.t) || '';
+                const k = localStorage.getItem(LS_KEYS.k) || '';
+                const b = localStorage.getItem(LS_KEYS.b) || '';
+                const a = localStorage.getItem(LS_KEYS.a) === '1';
+                const m = parseInt(localStorage.getItem(LS_KEYS.m) || `${CONFIG.DEFAULT_BPM}`, 10) || CONFIG.DEFAULT_BPM;
+                if (compTitle) compTitle.value = t;
+                // Set compKey.value to k or default to 'C' if k is falsy/empty
+                if (compKey)   compKey.value   = k || 'C';
+                if (compBody)  compBody.value  = b;
+                if (compAuto)  compAuto.checked = a;
+                if (compTempo) compTempo.value = String(m);
+            } catch {}
+        }
+        function saveComposer(){
+            try {
+                if (compTitle) localStorage.setItem(LS_KEYS.t, compTitle.value||'');
+                if (compKey)   localStorage.setItem(LS_KEYS.k, compKey.value||'');
+                if (compBody)  localStorage.setItem(LS_KEYS.b, compBody.value||'');
+                if (compAuto)  localStorage.setItem(LS_KEYS.a, compAuto.checked ? '1':'0');
+                if (compTempo) localStorage.setItem(LS_KEYS.m, String(parseInt(compTempo.value||`${CONFIG.DEFAULT_BPM}`,10)||CONFIG.DEFAULT_BPM));
+            } catch {}
+        }
+        loadComposer();
+
+        if (compApply) compApply.addEventListener('click', ()=>{ saveComposer(); renderFromUI(); });
+        if (compAuto)  compAuto.addEventListener('change', saveComposer);
+        ['input','change'].forEach(evt=>{
+            if (compTitle) compTitle.addEventListener(evt, ()=>{ if (compAuto?.checked) renderFromUI(); saveComposer(); });
+            if (compKey)   compKey.addEventListener(evt,   ()=>{
+                if (compAuto?.checked) {
+                    renderFromUI(); // full rebuild using \key
+                } else {
+                    // update written key in-place without a full rebuild
+                    try { setScoreKeyFromDropdown(); api.render(); } catch {}
+                }
+                updateCurrentKeyUI();
+                saveComposer();
+            });
+            if (compBody)  compBody.addEventListener(evt,  ()=>{ if (compAuto?.checked) renderFromUI(); saveComposer(); });
+            if (compTempo) compTempo.addEventListener(evt, ()=>{ const v=parseInt(compTempo.value||`${CONFIG.DEFAULT_BPM}`,10)||CONFIG.DEFAULT_BPM; tempoSlider.value=String(v); tempoVal.textContent=String(v); if (compAuto?.checked) renderFromUI(v); saveComposer(); });
+        });
+
+        // opacity
+        opacityVal.textContent = parseFloat(opacitySlider.value).toFixed(2);
+        opacitySlider.addEventListener('input', () => {
+            STATE.normalNoteDimFactor = parseFloat(opacitySlider.value) || 0;
+            opacityVal.textContent = STATE.normalNoteDimFactor.toFixed(2);
+            if (STATE.USE_INLINE_COLORING && api.score) { colorScoreByPitch(api.score); api.render(); }
+        });
+
+        // layout paddings
+        const applyLayoutPadding = () => {
+            try {
+                const s = api.settings;
+                if (!s?.display) return;
+                if (chordSpace) {
+                    const vTop = parseInt(chordSpace.value,10) || 0;
+                    s.display.effectStaffPaddingBottom = vTop;
+                    s.display.notationStaffPaddingTop = Math.max(0, Math.round(vTop * 0.8));
+                    chordVal.textContent = `${vTop}px`;
+                }
+                if (dynSpace) {
+                    const vBot = parseInt(dynSpace.value,10) || 0;
+                    s.display.effectStaffPaddingTop = vBot;
+                    s.display.notationStaffPaddingBottom = Math.max(0, Math.round(vBot * 0.875));
+                    dynVal.textContent = `${vBot}px`;
+                }
+                api.updateSettings(s); api.render();
+            } catch (e) { console.warn('applyLayoutPadding failed:', e); }
+        };
+        chordSpace.addEventListener('input', applyLayoutPadding);
+        dynSpace.addEventListener('input', applyLayoutPadding);
+
+        // HSV + assist
+        const refreshStaticHlUI = () => {
+            hlHVal.textContent = hlH.value; hlSVal.textContent = hlS.value; hlVVal.textContent = hlV.value;
+            setHighlightColor(getStaticHlHex());
+        };
+        refreshStaticHlUI();
+        [hlH,hlS,hlV].forEach(sl => sl.addEventListener('input', refreshStaticHlUI));
+
+        hlAssist.addEventListener('change', () => {
+            setBuiltinHighlighting(false); // avoid built-in flashing highlight (prevents flicker)
+            setHighlightColor(getStaticHlHex());
+        });
+
+        // transport
+        btnPlay.onclick = () => {
+            api.playPause();
+            clearHighlightedNote();
+        };
+        btnStop.onclick = () => api.stop();
+
+
+
+
+        // transpose UI
+        reflectTransposeUI(STATE.transposeSemis);
+        if (tDown)  tDown.addEventListener('click', () => applyNotationTranspose(clampSemis((STATE.transposeSemis||0) - 1)));
+        if (tUp)    tUp.addEventListener('click', () => applyNotationTranspose(clampSemis((STATE.transposeSemis||0) + 1)));
+        if (tReset) tReset.addEventListener('click', () => applyNotationTranspose(0));
+
+        if (keySigToggle){
+            keySigToggle.checked = STATE.keySigOn;
+            keySigToggle.addEventListener('change', () => {
+                STATE.keySigOn = keySigToggle.checked;
+                try { localStorage.setItem('keySigToggle', STATE.keySigOn ? '1' : '0'); } catch {}
+                applyNotationTranspose(STATE.transposeSemis);
+            });
+        }
+        if (enhToggle){
+            enhToggle.checked = STATE.preferFlats;
+            enhToggle.addEventListener('change', () => {
+                STATE.preferFlats = enhToggle.checked;
+                try { localStorage.setItem('enhPreferFlats', STATE.preferFlats ? '1' : '0'); } catch {}
+                applyNotationTranspose(STATE.transposeSemis);
+                updateCurrentKeyUI();
+            });
+        }
+
+        // Relative minor toggle persistence + wiring
+        (function initRelMinor(){
+            try {
+                const saved = localStorage.getItem('showRelativeMinor');
+                if (relMinorToggle) relMinorToggle.checked = (saved === '1');
+            } catch {}
+            updateCurrentKeyUI();
+        })();
+        if (relMinorToggle){
+            relMinorToggle.addEventListener('change', () => {
+                try { localStorage.setItem('showRelativeMinor', relMinorToggle.checked ? '1' : '0'); } catch {}
+                updateCurrentKeyUI();
+            });
+        }
+        /* =========================
+           AlphaTab events
+           ========================= */
+        api.error.on(err => {
+            console.error('[AlphaTab error]', err);
+            try { status.textContent = 'AlphaTab error: ' + (err?.message || err); } catch {}
+        });
+
+        api.soundFontLoad.on(e => {
+            const pct = Math.floor((e.loaded / e.total) * 100);
+            status.textContent = `Loading soundfont… ${pct}%`;
+        });
+
+        api.playerReady.on(() => {
+            status.textContent = 'Ready';
+            btnStop.disabled = false;
+            btnPlay.disabled = false;
+            try { applyLoopUI(loadLoopPref()); } catch(_) {}
+            // Re-apply metronome to be safe after player ready
+            try { api.metronomeVolume = parseFloat(localStorage.getItem('metroVol') || '0') || 0; } catch {}
+            if (!STATE.baseBpm || STATE.baseBpm <= 0) STATE.baseBpm = STATE.currentBpm;
+        });
+
+        // tick cache warm
+        api.midiLoad.on(() => { STATE.tickCacheReady = true; if (STATE.pendingAccentOnWarm && api?.player?.state === alphaTab.synth.PlayerState.Playing) { STATE.pendingAccentOnWarm = false; accentAtCurrentTick(); } });
+        api.midiLoaded.on(() => { STATE.tickCacheReady = true; if (STATE.pendingAccentOnWarm && api?.player?.state === alphaTab.synth.PlayerState.Playing) { STATE.pendingAccentOnWarm = false; accentAtCurrentTick(); } });
+
+        api.playerStateChanged.on(e => {
+            const playing = e.state === alphaTab.synth.PlayerState.Playing;
+            btnPlay.textContent = playing ? 'Pause' : 'Play';
+            if (playing) {
+                if (STATE.customLoopEnabled && STATE.loopStartTick != null) {
+                    const ct = currentTick();
+                    if (typeof ct === 'number' && STATE.loopEndTick != null && ct >= (STATE.loopEndTick - (STATE.LOOP_SEEK_EARLY_TICKS || 0))) {
+                        ensureSeekToLoopStart();
+                    }
+                }
+                if (STATE.tickCacheReady) {
+                    STATE.tickHint = null;
+                    accentAtCurrentTick();
+                } else {
+                    STATE.pendingAccentOnWarm = true;
+                }
+            } else {
+                STATE.pendingAccentOnWarm = false;
+            }
+            updateDebug('state:'+e.state);
+        });
+
+        api.playerPositionChanged.on(e => {
+            pos.textContent = `${fmtTime(e.currentTime)} / ${fmtTime(e.endTime)}`;
+            updateDebug();
+            if (STATE.customLoopEnabled && STATE.loopStartTick != null && STATE.loopEndTick != null) {
+                const ct = typeof e.currentTick === 'number' ? e.currentTick : null;
+                if (ct != null && ct >= (STATE.loopEndTick - STATE.LOOP_SEEK_EARLY_TICKS)) {
+                    ensureSeekToLoopStart();
+                }
+            }
+            // inline accent coloring
+            if (!STATE.USE_INLINE_COLORING || !STATE.tickCacheReady) return;
+            const tick = e?.currentTick;
+            const cache = api.tickCache;
+            if (!cache || typeof tick !== 'number') return;
+            const res = cache.findBeat(getTrackSet(), tick, STATE.tickHint);
+            if (!res) return; STATE.tickHint = res;
+            const beat = res.beat; if (!beat) return;
+            const scoreBeat = (beat.notes ? beat : findBeatInScore(api.score, beat)) || beat;
+
+            // Fast path: update Loop Selection Assist color every position tick
+            if (hlAssist && hlAssist.checked && scoreBeat) {
+                try {
+                    let top = null;
+                    for (const n of scoreBeat.notes || []) {
+                        if (typeof n.realValue === 'number' && (top === null || n.realValue > top)) top = n.realValue;
+                    }
+                    if (top != null) {
+                        const semi = (typeof STATE?.transposeSemis === 'number') ? STATE.transposeSemis : 0;
+                        setHighlightColor(pcColor(top + semi)); // updates --hl-color (no render needed)
+                    }
+                } catch {}
+            }
+
+            if (STATE.lastBeatAccented === scoreBeat) return;
+            if (STATE.lastBeatAccented) recolorBeat(STATE.lastBeatAccented);
+            accentBeat(scoreBeat);
+            setCursorColorToBeat(scoreBeat);
+            STATE.lastBeatAccented = scoreBeat;
+            try { api.render(); } catch {}
+        });
+
+        api.playerStateChanged.on(e => {
+            if (e.state !== alphaTab.synth.PlayerState.Playing) {
+                STATE.pendingAccentOnWarm = false;
+                if (STATE.lastBeatAccented) {
+                    recolorBeat(STATE.lastBeatAccented);
+                    STATE.lastBeatAccented = null;
+                    STATE.tickHint = null;
+                    try { api.render(); } catch {}
+                }
+            }
+        });
+
+        api.scoreLoaded.on(score => {
+            applyDarkNotationalStyles(api.score, STATE.isDark);
+            if (STATE.USE_INLINE_COLORING) colorScoreByPitch(api.score);
+            setHighlightColor(getStaticHlHex());
+            setBuiltinHighlighting(hlAssist.checked);
+            try { setScoreKeyFromDropdown(); } catch {}
+            updateCurrentKeyUI();
+            if (!tempoSlider.dataset.touched) { tempoSlider.value = STATE.currentBpm; tempoVal.textContent = STATE.currentBpm; }
+            if (!tempoSlider.dataset.touched) { STATE.baseBpm = STATE.currentBpm; }
+            try {
+                const s = api.settings?.display || {};
+                if (Number.isFinite(s.effectStaffPaddingBottom)) { chordSpace.value = String(s.effectStaffPaddingBottom); chordVal.textContent = s.effectStaffPaddingBottom + 'px'; }
+                if (Number.isFinite(s.effectStaffPaddingTop)) { dynSpace.value = String(s.effectStaffPaddingTop); dynVal.textContent = s.effectStaffPaddingTop + 'px'; }
+            } catch {}
+            STATE.tickCacheReady = false; STATE.tickHint = null;
+            const prewarm = () => { try { api.loadMidiForScore(); } catch(_) {} };
+            if (api.isReadyForPlayback) prewarm(); else { const once = () => { api.playerReady.off(once); prewarm(); }; api.playerReady.on(once); }
+            // Loop: handled via playbackRange now
+            // apply current transpose to both audio + display (and key if enabled)
+            applyNotationTranspose(STATE.transposeSemis);
+            api.render();
+            updateDebug('scoreLoaded');
+            highlightNotesList = [];
+            for (const track of score.tracks)
+                for (const staff of track.staves)
+                    for (const bar of staff.bars)
+                        for (const voice of bar.voices)
+                            for (const beat of voice.beats)
+                                for (const note of beat.notes || []) {
+                                    highlightNotesList.push({ note, beat });
+                                }
+            highlightedNoteIdx = -1;
+        });
+        // Clear the highlighted note
+        function clearHighlightedNote() {
+            // Remove accent from previously highlighted beat
+            if (highlightedNoteIdx >= 0 && highlightNotesList[highlightedNoteIdx]) {
+                const { beat } = highlightNotesList[highlightedNoteIdx];
+                if (beat) recolorBeat(beat); // revert to normal color+opacity
+            }
+            highlightedNoteIdx = -1;
+            try { api.render(); } catch {}
+        }
+
+        function highlightNoteAt(idx) {
+            clearHighlightedNote();
+            if (highlightNotesList.length === 0) return;
+            highlightedNoteIdx = ((idx % highlightNotesList.length) + highlightNotesList.length) % highlightNotesList.length;
+            const { note, beat } = highlightNotesList[highlightedNoteIdx];
+            if (!note || !beat) return;
+
+            // 1) Visual accent (unchanged)
+            accentBeat(beat);
+
+            // 2) Move playhead to this beat without stopping playback
+            try {
+                // Prefer exact conversion via tick cache if available
+                const tc = api.tickCache ?? api.boundsLookup ?? null;
+                let targetTick = null;
+                if (typeof beat.timer === 'number') {
+                    if (tc && typeof tc.timeToTick === 'function') {
+                        targetTick = tc.timeToTick(Math.max(0, beat.timer));
+                    } else {
+                        // Fallback: estimate ticks from ms using total duration ratios
+                        const durMs = api?.player?.endTime ?? api?.score?.playTime ?? null;
+                        const durTicks = api?.score?.duration ?? null;
+                        if (durMs && durTicks) targetTick = Math.round((beat.timer / durMs) * durTicks);
+                    }
+                }
+                if (typeof targetTick === 'number' && isFinite(targetTick)) {
+                    const wasPlaying = api?.player?.state === alphaTab.synth.PlayerState.Playing;
+                    api.tickPosition = Math.max(0, targetTick);
+                    try { api.scrollToCursor(); } catch {}
+                    // preserve prior state (do not force play/pause changes)
+                    if (wasPlaying) {
+                        // nudge the renderer so the colored accent stays in sync
+                        try { api.render(); } catch {}
+                    }
+                }
+            } catch {}
+
+            try { api.render(); } catch {}
+        }
+
+
+        // MIDI-driven highlight color when assist is ON
+        try {
+            if (api.midiEventsPlayed && 'midiEventsPlayedFilter' in api && alphaTab?.midi?.MidiEventType) {
+                api.midiEventsPlayedFilter = [alphaTab.midi.MidiEventType.NoteOn];
+                api.midiEventsPlayed.on(e => { if (!hlAssist.checked) return; // only when assist active
+                    // color by top midi pitch of the batch
+                    let best = null;
+                    for (const ev of e.events || []) {
+                        const type = ev.type || ev.eventType || ev.kind;
+                        const isNoteOn = type === alphaTab?.midi?.MidiEventType?.NoteOn || ev.isNoteOn;
+                        if (!isNoteOn) continue;
+                        const n = ev.note ?? ev.noteNumber ?? ev.key ?? ev.data1;
+                        if (typeof n !== 'number') continue;
+                        if (best == null || n > best) best = n;
+                    }
+                    if (best != null) {
+                        const semi = (typeof STATE?.transposeSemis === 'number') ? STATE.transposeSemis : 0;
+                        setHighlightColor(pcColor(best + semi));
+                    }
+                });
+            }
+        } catch {}
+
+        // Play/pause helpers
+        const accentAtCurrentTick = () => {
+            if (!STATE.USE_INLINE_COLORING) return;
+            if (!STATE.tickCacheReady) return;
+            const cache = api.tickCache;
+            const tick = typeof api.tickPosition === 'number' ? api.tickPosition : undefined;
+            if (!cache || typeof tick !== 'number') return;
+            const res = cache.findBeat(getTrackSet(), tick, STATE.tickHint);
+            if (!res || !res.beat) return;
+            STATE.tickHint = res;
+            const b = res.beat;
+            const scoreBeat = (b.notes ? b : findBeatInScore(api.score, b)) || b;
+            if (STATE.lastBeatAccented && STATE.lastBeatAccented !== scoreBeat) recolorBeat(STATE.lastBeatAccented);
+            accentBeat(scoreBeat);
+            STATE.lastBeatAccented = scoreBeat;
+            api.render();
+        };
+
+        // ---- Notation wrapper height: drag-to-resize + persistence
+        const LS_NOTATION_HEIGHT = 'notationWrap.heightPx';
+        (function initNotationHeight(){
+            try {
+                const saved = parseInt(localStorage.getItem(LS_NOTATION_HEIGHT), 10);
+                if (!isNaN(saved) && saved >= 200) notationWrap.style.height = saved + 'px';
+            } catch {}
+        })();
+        if (notationResizer && notationWrap){
+            let startY = 0, startH = 0, dragging = false;
+            const onMove = (e) => {
+                if (!dragging) return;
+                const dy = (e.clientY || 0) - startY;
+                const minH = 200;
+                const maxH = Math.round(window.innerHeight * 0.95);
+                let h = Math.min(maxH, Math.max(minH, startH + dy));
+                notationWrap.style.height = h + 'px';
+                try { localStorage.setItem(LS_NOTATION_HEIGHT, String(h)); } catch {}
+            };
+            const onUp = () => {
+                if (!dragging) return;
+                dragging = false;
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+                document.body.style.userSelect = '';
+            };
+            notationResizer.addEventListener('mousedown', (e) => {
+                dragging = true;
+                startY = e.clientY || 0;
+                startH = notationWrap.getBoundingClientRect().height;
+                document.body.style.userSelect = 'none';
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onUp);
+                e.preventDefault();
+            });
+        }
+
+        // ---- Layout mode selector (Vertical/Page vs Horizontal)
+        function applyLayoutMode(mode){
+            try {
+                const s = api.settings || {};
+                s.display = s.display || {};
+                const LM = alphaTab?.LayoutMode;
+                s.display.layoutMode = (mode === 'horizontal') ? (LM ? LM.Horizontal : 1) : (LM ? LM.Page : 0);
+                api.updateSettings(s);
+                api.render();
+            } catch (e) { console.warn('applyLayoutMode failed', e); }
+        }
+        (function initLayoutMode(){
+            const saved = localStorage.getItem('layoutMode') || 'page';
+            if (layoutModeSelect) layoutModeSelect.value = saved;
+            applyLayoutMode(saved);
+        })();
+        if (layoutModeSelect){
+            layoutModeSelect.addEventListener('change', () => {
+                const v = layoutModeSelect.value;
+                try { localStorage.setItem('layoutMode', v); } catch {}
+                applyLayoutMode(v);
+            });
+        }
+        window.addEventListener('resize', updateLoopMasks);
+        if (notationWrap) notationWrap.addEventListener('scroll', updateLoopMasks, { passive: true });
+
+        // Use the wrapper as the scroll container so the notation area scrolls
+        try {
+            if (notationWrap) {
+                const s = api.settings || (api.settings = {});
+                s.player = s.player || {};
+                s.player.scrollElement = notationWrap;
+                api.updateSettings(s);
+            }
+        } catch {}
+
+        // First render after fonts are ready
+        Promise.all([
+            document.fonts.load("16px 'MuseJazzText'"),
+            document.fonts.load("16px 'MuseJazz'")
+        ]).catch(() => {}).finally(() => {
+            // Ensure compKey has a value before first render; default to 'C' if empty
+            if (compKey && !compKey.value) compKey.value = 'C';
+            renderScoreWithBpm(STATE.currentBpm);
+            setHighlightColor(getStaticHlHex());
+            updateCurrentKeyUI();
+        });
     })();
-    if (notationResizer && notationWrap){
-      let startY = 0, startH = 0, dragging = false;
-      const onMove = (e) => {
-        if (!dragging) return;
-        const dy = (e.clientY || 0) - startY;
-        const minH = 200;
-        const maxH = Math.round(window.innerHeight * 0.95);
-        let h = Math.min(maxH, Math.max(minH, startH + dy));
-        notationWrap.style.height = h + 'px';
-        try { localStorage.setItem(LS_NOTATION_HEIGHT, String(h)); } catch {}
-      };
-      const onUp = () => {
-        if (!dragging) return;
-        dragging = false;
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup', onUp);
-        document.body.style.userSelect = '';
-      };
-      notationResizer.addEventListener('mousedown', (e) => {
-        dragging = true;
-        startY = e.clientY || 0;
-        startH = notationWrap.getBoundingClientRect().height;
-        document.body.style.userSelect = 'none';
-        document.addEventListener('mousemove', onMove);
-        document.addEventListener('mouseup', onUp);
-        e.preventDefault();
-      });
+    // Toggle UI visibility logic
+    const toggleUiBtn = document.getElementById('toggleUi');
+    const controls = document.querySelector('.controls');
+    const composer = document.querySelector('.composer');
+    let uiVisible = true;
+    if (toggleUiBtn) {
+        toggleUiBtn.addEventListener('click', () => {
+            uiVisible = !uiVisible;
+            if (controls) controls.style.display = uiVisible ? '' : 'none';
+            if (composer) composer.style.display = uiVisible ? '' : 'none';
+            toggleUiBtn.textContent = uiVisible ? 'Hide UI' : 'Show UI';
+        });
     }
-
-    // ---- Layout mode selector (Vertical/Page vs Horizontal)
-    function applyLayoutMode(mode){
-      try {
-        const s = api.settings || {};
-        s.display = s.display || {};
-        const LM = alphaTab?.LayoutMode;
-        s.display.layoutMode = (mode === 'horizontal') ? (LM ? LM.Horizontal : 1) : (LM ? LM.Page : 0);
-        api.updateSettings(s);
-        api.render();
-      } catch (e) { console.warn('applyLayoutMode failed', e); }
-    }
-    (function initLayoutMode(){
-      const saved = localStorage.getItem('layoutMode') || 'page';
-      if (layoutModeSelect) layoutModeSelect.value = saved;
-      applyLayoutMode(saved);
-    })();
-    if (layoutModeSelect){
-      layoutModeSelect.addEventListener('change', () => {
-        const v = layoutModeSelect.value;
-        try { localStorage.setItem('layoutMode', v); } catch {}
-        applyLayoutMode(v);
-      });
-    }
-    window.addEventListener('resize', updateLoopMasks);
-    if (notationWrap) notationWrap.addEventListener('scroll', updateLoopMasks, { passive: true });
-
-    // Use the wrapper as the scroll container so the notation area scrolls
-    try {
-      if (notationWrap) {
-        const s = api.settings || (api.settings = {});
-        s.player = s.player || {};
-        s.player.scrollElement = notationWrap;
-        api.updateSettings(s);
-      }
-    } catch {}
-
-    // First render after fonts are ready
-    Promise.all([
-      document.fonts.load("16px 'MuseJazzText'"),
-      document.fonts.load("16px 'MuseJazz'")
-    ]).catch(() => {}).finally(() => {
-      // Ensure compKey has a value before first render; default to 'C' if empty
-     if (compKey && !compKey.value) compKey.value = 'C';
-      renderScoreWithBpm(STATE.currentBpm);
-      setHighlightColor(getStaticHlHex());
-      updateCurrentKeyUI();
-    });
-  })();
-  </script>
+</script>
