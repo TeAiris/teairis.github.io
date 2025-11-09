@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <!-- Mobile: fit small screens & scale correctly -->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mallet Lessons — Interactive Music Modules</title>
+
+    <!-- Web fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="style.css" />
+
+    <!-- AlphaTab -->
+    <script src="https://teairis.github.io/AlphaTabLib/dist/alphaTab.js"></script>
+</head>
+<body>
+
+<!-- ===== NOTION-STYLE PAGE HEADER ===== -->
+<header class="np-header">
+  <div class="np-wrap">
+    <div class="np-crumbs"><a href="#">Lessons</a> / <span>Home</span></div>
+    <div class="np-title-row">
+      <div class="np-icon" aria-hidden="true">🎼</div>
+      <h1 class="np-title">Mallet Lessons</h1>
+    </div>
+    <div class="np-meta">
+      <span class="np-pill">Updated <span id="np-updated"></span></span>
+      <span class="np-dot">•</span>
+      <span class="np-pill">AlphaTab</span>
+      <span class="np-dot">•</span>
+      <button class="np-btn" id="toggleTheme" type="button">🌗 Toggle Theme</button>
+    </div>
+  </div>
+</header>
+
+<!-- ===== NAV (chips) ===== -->
+<nav class="nav">
+    <div class="container">
+        <div class="chips" id="lessonChips" role="navigation" aria-label="Lesson navigation">
+            <!-- JS will populate chips -->
+        </div>
+        <div class="print-note">Use the button above to save as PDF.</div>
+    </div>
+</nav>
+
+<!-- ===== GRID LAYOUT ===== -->
+<div class="container grid" id="lessons">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <h3>Quick Jump</h3>
+        <div id="quickJump">
+            <!-- JS will populate sidebar links -->
+        </div>
+    </aside>
+
+    <!-- Main content -->
+    <main id="lessonContainer">
+        <!-- JS injects the active lesson here -->
+    </main>
+</div>
+
+<footer class="footer">Made with 🎵 and aloha • Powered by AlphaTab • Links stay clickable in PDF</footer>
+
+<!-- App logic -->
+<script src="app.js"></script>
+</body>
+</html>

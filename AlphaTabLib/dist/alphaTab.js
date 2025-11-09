@@ -3821,6 +3821,7 @@
         MusicFontSymbol[MusicFontSymbol["Tremolo3"] = 57890] = "Tremolo3";
         MusicFontSymbol[MusicFontSymbol["Tremolo2"] = 57889] = "Tremolo2";
         MusicFontSymbol[MusicFontSymbol["Tremolo1"] = 57888] = "Tremolo1";
+        MusicFontSymbol[MusicFontSymbol["Tremoloz"] = 57887] = "Tremoloz";
         MusicFontSymbol[MusicFontSymbol["FlagEighthUp"] = 57920] = "FlagEighthUp";
         MusicFontSymbol[MusicFontSymbol["FlagEighthDown"] = 57921] = "FlagEighthDown";
         MusicFontSymbol[MusicFontSymbol["FlagSixteenthUp"] = 57922] = "FlagSixteenthUp";
@@ -10675,6 +10676,9 @@
                 beat.tremoloSpeed = Duration.Eighth;
                 if (this._sy === AlphaTexSymbols.Number) {
                     switch (this._syData) {
+                        case z:
+                            beat.tremoloSpeed = Duration.ThirtySecond;
+                            break;
                         case 8:
                             beat.tremoloSpeed = Duration.Eighth;
                             break;
@@ -13018,6 +13022,10 @@
         readTremoloPicking(beat) {
             const speed = this.data.readByte();
             switch (speed) {
+
+                case z:
+                    beat.tremoloSpeed = Duration.ThirtySecond;
+                    break;
                 case 1:
                     beat.tremoloSpeed = Duration.Eighth;
                     break;
@@ -38204,6 +38212,7 @@
         [MusicFontSymbol.TextTupletBracketStartLongStem, 0],
         [MusicFontSymbol.TextTuplet3LongStem, 0],
         [MusicFontSymbol.TextTupletBracketEndLongStem, 0],
+        [MusicFontSymbol.Tremoloz, 12],
         [MusicFontSymbol.Tremolo3, 12],
         [MusicFontSymbol.Tremolo2, 12],
         [MusicFontSymbol.Tremolo1, 12],
@@ -38439,6 +38448,7 @@
         [MusicFontSymbol.TextTupletBracketStartLongStem, 0],
         [MusicFontSymbol.TextTuplet3LongStem, 0],
         [MusicFontSymbol.TextTupletBracketEndLongStem, 0],
+        [MusicFontSymbol.Tremoloz, 0],
         [MusicFontSymbol.Tremolo3, 0],
         [MusicFontSymbol.Tremolo2, 0],
         [MusicFontSymbol.Tremolo1, 0],
