@@ -3818,7 +3818,7 @@
         MusicFontSymbol[MusicFontSymbol["TextTupletBracketStartLongStem"] = 57857] = "TextTupletBracketStartLongStem";
         MusicFontSymbol[MusicFontSymbol["TextTuplet3LongStem"] = 57858] = "TextTuplet3LongStem";
         MusicFontSymbol[MusicFontSymbol["TextTupletBracketEndLongStem"] = 57859] = "TextTupletBracketEndLongStem";
-        MusicFontSymbol[MusicFontSymbol["Tremolo3"] = 57890] = "Tremolo3";
+        MusicFontSymbol[MusicFontSymbol["Tremolo3"] = 57887] = "Tremolo3";
         MusicFontSymbol[MusicFontSymbol["Tremolo2"] = 57889] = "Tremolo2";
         MusicFontSymbol[MusicFontSymbol["Tremolo1"] = 57888] = "Tremolo1";
         MusicFontSymbol[MusicFontSymbol["Tremoloz"] = 57887] = "Tremoloz";
