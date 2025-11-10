@@ -3818,10 +3818,10 @@
         MusicFontSymbol[MusicFontSymbol["TextTupletBracketStartLongStem"] = 57857] = "TextTupletBracketStartLongStem";
         MusicFontSymbol[MusicFontSymbol["TextTuplet3LongStem"] = 57858] = "TextTuplet3LongStem";
         MusicFontSymbol[MusicFontSymbol["TextTupletBracketEndLongStem"] = 57859] = "TextTupletBracketEndLongStem";
-        MusicFontSymbol[MusicFontSymbol["Tremolo3"] = 57887] = "Tremolo3";
+        MusicFontSymbol[MusicFontSymbol["Tremolo3"] = 57890] = "Tremolo3";
         MusicFontSymbol[MusicFontSymbol["Tremolo2"] = 57889] = "Tremolo2";
         MusicFontSymbol[MusicFontSymbol["Tremolo1"] = 57888] = "Tremolo1";
-        MusicFontSymbol[MusicFontSymbol["Tremoloz"] = 57887] = "Tremoloz";
+        MusicFontSymbol[MusicFontSymbol["Tremoloz"] = 57898] = "Tremoloz";
         MusicFontSymbol[MusicFontSymbol["FlagEighthUp"] = 57920] = "FlagEighthUp";
         MusicFontSymbol[MusicFontSymbol["FlagEighthDown"] = 57921] = "FlagEighthDown";
         MusicFontSymbol[MusicFontSymbol["FlagSixteenthUp"] = 57922] = "FlagSixteenthUp";
@@ -10676,8 +10676,8 @@
                 beat.tremoloSpeed = Duration.Eighth;
                 if (this._sy === AlphaTexSymbols.Number) {
                     switch (this._syData) {
-                        case 1:
-                            beat.tremoloSpeed = Duration.ThirtySecond;
+                        case 0:
+                            beat.tremoloSpeed = Duration.SixtyFourth;
                             break;
                         case 8:
                             beat.tremoloSpeed = Duration.Eighth;
