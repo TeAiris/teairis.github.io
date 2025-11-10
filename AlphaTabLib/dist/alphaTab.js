@@ -10676,7 +10676,7 @@
                 beat.tremoloSpeed = Duration.Eighth;
                 if (this._sy === AlphaTexSymbols.Number) {
                     switch (this._syData) {
-                        case z:
+                        case 1:
                             beat.tremoloSpeed = Duration.ThirtySecond;
                             break;
                         case 8:
@@ -13023,7 +13023,7 @@
             const speed = this.data.readByte();
             switch (speed) {
 
-                case z:
+                case 1:
                     beat.tremoloSpeed = Duration.ThirtySecond;
                     break;
                 case 1:
@@ -52991,7 +52991,7 @@
                 case Duration.Eighth:
                     return MusicFontSymbol.Tremolo1;
                 default:
-                    return MusicFontSymbol.None;
+                    return MusicFontSymbol.Tremoloz;
             }
         }
     }
