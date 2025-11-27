@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>WebRTC Screen Receiver (Answer / Viewer)</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        textarea {
+            width: 100%;
+            height: 80px;
+            font-family: monospace;
+            font-size: 11px;
+        }
+        video {
+            width: 70%;
+            background: #000;
+        }
+        .row {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+        .col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .status {
+            padding: 6px 10px;
+            background: #111;
+            color: #0f0;
+            font-size: 12px;
+            border-radius: 4px;
+            white-space: pre-line;
+        }
+        button {
+            padding: 6px 10px;
+            border-radius: 4px;
+        }
+        h3 {
+            margin: 4px 0;
+        }
+        input {
+            padding: 4px 6px;
+        }
+    </style>
+</head>
+<body>
+<h1>WebRTC Screen Receiver (Answer / Viewer)</h1>
+
+<div class="row">
+    <div class="col">
+        <label>
+            Room Code:
+            <input id="roomCode" type="text" placeholder="e.g. 100933" />
+        </label>
+        <button id="btnJoin">1) Join Room & Wait for Stream</button>
+
+        <div class="status">
+            <div>Room: <span id="roomLabel">-</span></div>
+            <div>Signaling: <span id="sigState">-</span></div>
+            <div>ICE: <span id="iceState">-</span></div>
+            <div>Connection: <span id="connState">-</span></div>
+            <div id="statusText">Status: Idle</div>
+        </div>
+
+        <h3>Debug Log</h3>
+        <textarea id="logBox" readonly></textarea>
+    </div>
+
+    <div class="col">
+        <h3>Remote Video</h3>
+        <video id="remoteVideo" autoplay playsinline controls></video>
+    </div>
+</div>
+
+<script>
+    const roomInput    = document.getElementById('roomCode');
+    const btnJoin      = document.getElementById('btnJoin');
+    const remoteVideo  = document.getElementById('remoteVideo');
+
+    const statusText   = document.getElementById('statusText');
+    const sigStateEl   = document.getElementById('sigState');
+    const iceStateEl   = document.getElementById('iceState');
+    const connStateEl  = document.getElementById('connState');
+    const roomLabelEl  = document.getElementById('roomLabel');
+    const logBox       = document.getElementById('logBox');
+
+    let ws = null;
+    let pc = null;
+    let roomCode = null;
+    let joined = false;
+
+    function log(msg) {
+        console.log('[RECEIVER]', msg);
+        logBox.value += msg + '\n';
+        logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    function setStatus(msg) {
+        statusText.textContent = 'Status: ' + msg;
+        if (pc) {
+            sigStateEl.textContent = pc.signalingState;
+            iceStateEl.textContent = pc.iceConnectionState;
+            connStateEl.textContent = pc.connectionState || '(n/a)';
+        }
+    }
+
+    function connectWebSocket() {
+        if (ws && ws.readyState === WebSocket.OPEN) return;
+
+        ws = new WebSocket('ws://192.168.0.48:8080');
+        ws.onopen = () => {
+            log('WebSocket connected');
+            if (roomCode) {
+                sendWS({ type: 'join', room: roomCode });
+            }
+        };
+        ws.onmessage = (ev) => {
+            const msg = JSON.parse(ev.data);
+            handleWSMessage(msg);
+        };
+        ws.onclose = () => {
+            log('WebSocket closed');
+        };
+        ws.onerror = (err) => {
+            console.error(err);
+            log('WebSocket error: ' + err);
+        };
+    }
+
+    function sendWS(obj) {
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+            log('WS not open, cannot send: ' + JSON.stringify(obj));
+            return;
+        }
+        ws.send(JSON.stringify(obj));
+    }
+
+    function handleWSMessage(msg) {
+        switch (msg.type) {
+            case 'joined':
+                joined = true;
+                roomLabelEl.textContent = msg.room + ' (peers: ' + msg.peers + ')';
+                setStatus('Joined room ' + msg.room + '. Waiting for offer...');
+                break;
+
+            case 'peer-joined':
+                log('Peer joined room ' + msg.room + ', peers=' + msg.peers);
+                break;
+
+            case 'offer':
+                log('Received remote offer; creating answer...');
+                onOffer(msg.sdp);
+                break;
+
+            case 'answer':
+                // receiver doesn’t expect answers
+                log('Received answer on receiver; ignoring.');
+                break;
+
+            case 'ice':
+                log('Received ICE candidate');
+                addRemoteIce(msg.candidate);
+                break;
+        }
+    }
+
+    function createPeerConnection() {
+        pc = new RTCPeerConnection({
+            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+        });
+
+        sigStateEl.textContent = pc.signalingState;
+        iceStateEl.textContent = pc.iceConnectionState;
+        connStateEl.textContent = pc.connectionState || '(n/a)';
+
+        pc.ontrack = (event) => {
+            log('ontrack fired');
+            if (event.streams && event.streams[0]) {
+                remoteVideo.srcObject = event.streams[0];
+            } else {
+                const inbound = new MediaStream();
+                inbound.addTrack(event.track);
+                remoteVideo.srcObject = inbound;
+            }
+        };
+
+        pc.ondatachannel = (event) => {
+            const dc = event.channel;
+            log('DataChannel received: ' + dc.label);
+            dc.onmessage = (ev) => log('DataChannel message: ' + ev.data);
+        };
+
+        pc.oniceconnectionstatechange = () => {
+            iceStateEl.textContent = pc.iceConnectionState;
+        };
+        pc.onsignalingstatechange = () => {
+            sigStateEl.textContent = pc.signalingState;
+        };
+        pc.onconnectionstatechange = () => {
+            connStateEl.textContent = pc.connectionState || '(n/a)';
+        };
+
+        pc.onicecandidate = (event) => {
+            if (event.candidate) {
+                sendWS({ type: 'ice', room: roomCode, candidate: event.candidate });
+            } else {
+                log('ICE gathering complete (receiver)');
+            }
+        };
+    }
+
+    async function onOffer(offerDesc) {
+        try {
+            if (!pc) {
+                createPeerConnection();
+            }
+
+            // Guard against double-setting
+            if (pc.remoteDescription) {
+                log('Remote description already set; ignoring additional offer');
+                return;
+            }
+
+            const offer = new RTCSessionDescription(offerDesc);
+            await pc.setRemoteDescription(offer);
+
+            setStatus('Creating answer...');
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+
+            log('Sending answer via WebSocket');
+            sendWS({ type: 'answer', room: roomCode, sdp: answer });
+            setStatus('Answer sent. Waiting for connection...');
+        } catch (err) {
+            console.error(err);
+            log('Error handling offer: ' + err.message);
+        }
+    }
+
+    async function addRemoteIce(candidate) {
+        try {
+            if (!pc) {
+                log('No pc, cannot add ICE yet');
+                return;
+            }
+            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (err) {
+            console.error(err);
+            log('Error adding ICE: ' + err.message);
+        }
+    }
+
+    // UI events
+    btnJoin.addEventListener('click', () => {
+        const code = roomInput.value.trim();
+        if (!code) {
+            alert('Enter a room code (e.g. 100933)');
+            return;
+        }
+        roomCode = code;
+        connectWebSocket();
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            sendWS({ type: 'join', room: roomCode });
+        }
+        setStatus('Joining room ' + code + '...');
+    });
+</script>
+</body>
+</html>

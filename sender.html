@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>WebRTC Screen Sender (Offer / Mac)</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        textarea {
+            width: 100%;
+            height: 80px;
+            font-family: monospace;
+            font-size: 11px;
+        }
+        video {
+            width: 50%;
+            background: #000;
+        }
+        .row {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+        .col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .status {
+            padding: 6px 10px;
+            background: #111;
+            color: #0f0;
+            font-size: 12px;
+            border-radius: 4px;
+            white-space: pre-line;
+        }
+        button {
+            padding: 6px 10px;
+            border-radius: 4px;
+        }
+        h3 {
+            margin: 4px 0;
+        }
+        input {
+            padding: 4px 6px;
+        }
+    </style>
+</head>
+<body>
+<h1>WebRTC Screen Sender (Offer / Mac)</h1>
+
+<div class="row">
+    <div class="col">
+        <label>
+            Room Code:
+            <input id="roomCode" type="text" placeholder="e.g. 100933" />
+        </label>
+        <button id="btnJoin">1) Join Room</button>
+        <button id="btnStart" disabled>2) Start Screen Capture & Stream</button>
+
+        <video id="localVideo" autoplay playsinline muted></video>
+
+        <div class="status">
+            <div>Room: <span id="roomLabel">-</span></div>
+            <div>Signaling: <span id="sigState">-</span></div>
+            <div>ICE: <span id="iceState">-</span></div>
+            <div>Connection: <span id="connState">-</span></div>
+            <div id="statusText">Status: Idle</div>
+        </div>
+    </div>
+
+    <div class="col">
+        <h3>Debug Log</h3>
+        <textarea id="logBox" readonly></textarea>
+    </div>
+</div>
+
+<script>
+    const roomInput    = document.getElementById('roomCode');
+    const btnJoin      = document.getElementById('btnJoin');
+    const btnStart     = document.getElementById('btnStart');
+    const localVideo   = document.getElementById('localVideo');
+
+    const statusText   = document.getElementById('statusText');
+    const sigStateEl   = document.getElementById('sigState');
+    const iceStateEl   = document.getElementById('iceState');
+    const connStateEl  = document.getElementById('connState');
+    const roomLabelEl  = document.getElementById('roomLabel');
+    const logBox       = document.getElementById('logBox');
+
+    let ws = null;
+    let pc = null;
+    let dc = null;
+    let roomCode = null;
+    let joined = false;
+
+    function log(msg) {
+        console.log('[SENDER]', msg);
+        logBox.value += msg + '\n';
+        logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    function setStatus(msg) {
+        statusText.textContent = 'Status: ' + msg;
+        if (pc) {
+            sigStateEl.textContent = pc.signalingState;
+            iceStateEl.textContent = pc.iceConnectionState;
+            connStateEl.textContent = pc.connectionState || '(n/a)';
+        }
+    }
+
+    function connectWebSocket() {
+        if (ws && ws.readyState === WebSocket.OPEN) return;
+
+        ws = new WebSocket('ws://192.168.0.48:8080');
+        ws.onopen = () => {
+            log('WebSocket connected');
+            if (roomCode) {
+                sendWS({ type: 'join', room: roomCode });
+            }
+        };
+        ws.onmessage = (ev) => {
+            const msg = JSON.parse(ev.data);
+            handleWSMessage(msg);
+        };
+        ws.onclose = () => {
+            log('WebSocket closed');
+        };
+        ws.onerror = (err) => {
+            console.error(err);
+            log('WebSocket error: ' + err);
+        };
+    }
+
+    function sendWS(obj) {
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+            log('WS not open, cannot send: ' + JSON.stringify(obj));
+            return;
+        }
+        ws.send(JSON.stringify(obj));
+    }
+
+    function handleWSMessage(msg) {
+        switch (msg.type) {
+            case 'joined':
+                joined = true;
+                roomLabelEl.textContent = msg.room + ' (peers: ' + msg.peers + ')';
+                setStatus('Joined room ' + msg.room);
+                btnStart.disabled = false;
+                break;
+
+            case 'peer-joined':
+                log('Peer joined room ' + msg.room + ', peers=' + msg.peers);
+                break;
+
+            case 'answer':
+                log('Received remote answer');
+                applyRemoteAnswer(msg);
+                break;
+
+            case 'ice':
+                log('Received ICE candidate');
+                addRemoteIce(msg.candidate);
+                break;
+
+            // sender ignores incoming 'offer'
+        }
+    }
+
+    function createPeerConnection() {
+        pc = new RTCPeerConnection({
+            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+        });
+
+        sigStateEl.textContent = pc.signalingState;
+        iceStateEl.textContent = pc.iceConnectionState;
+        connStateEl.textContent = pc.connectionState || '(n/a)';
+
+        pc.oniceconnectionstatechange = () => {
+            iceStateEl.textContent = pc.iceConnectionState;
+        };
+        pc.onsignalingstatechange = () => {
+            sigStateEl.textContent = pc.signalingState;
+        };
+        pc.onconnectionstatechange = () => {
+            connStateEl.textContent = pc.connectionState || '(n/a)';
+        };
+
+        pc.onicecandidate = (event) => {
+            if (event.candidate) {
+                sendWS({ type: 'ice', room: roomCode, candidate: event.candidate });
+            } else {
+                log('ICE gathering complete');
+            }
+        };
+
+        // DataChannel reserved for future input (mouse/keyboard)
+        dc = pc.createDataChannel('input');
+        dc.onopen = () => log('DataChannel open');
+        dc.onclose = () => log('DataChannel closed');
+    }
+
+    async function startCaptureAndOffer() {
+        try {
+            if (!joined) {
+                alert('Join a room first.');
+                return;
+            }
+            if (!pc) {
+                createPeerConnection();
+            }
+
+            const stream = await navigator.mediaDevices.getDisplayMedia({
+                video: true,
+                audio: false
+            });
+
+            stream.getTracks().forEach(track => pc.addTrack(track, stream));
+            localVideo.srcObject = stream;
+
+            setStatus('Creating offer...');
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+
+            log('Sending offer via WebSocket');
+            sendWS({ type: 'offer', room: roomCode, sdp: offer });
+
+            setStatus('Offer sent, waiting for answer...');
+        } catch (err) {
+            console.error(err);
+            setStatus('Error: ' + err.message);
+        }
+    }
+
+    async function applyRemoteAnswer(msg) {
+        try {
+            if (!pc) {
+                log('No pc yet, ignoring answer');
+                return;
+            }
+
+            if (pc.remoteDescription) {
+                log('Remote description already set; ignoring duplicate answer');
+                return;
+            }
+
+            const answerDesc = new RTCSessionDescription(msg.sdp);
+            await pc.setRemoteDescription(answerDesc);
+            setStatus('Remote answer applied. Connected soon...');
+        } catch (err) {
+            console.error(err);
+            log('Error applying answer: ' + err.message);
+        }
+    }
+
+    async function addRemoteIce(candidate) {
+        try {
+            if (!pc) {
+                log('No pc, cannot add ICE');
+                return;
+            }
+            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (err) {
+            console.error(err);
+            log('Error adding ICE: ' + err.message);
+        }
+    }
+
+    // UI events
+    btnJoin.addEventListener('click', () => {
+        const code = roomInput.value.trim();
+        if (!code) {
+            alert('Enter a room code (e.g. 100933)');
+            return;
+        }
+        roomCode = code;
+        connectWebSocket();
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            sendWS({ type: 'join', room: roomCode });
+        }
+        setStatus('Joining room ' + code + '...');
+    });
+
+    btnStart.addEventListener('click', startCaptureAndOffer);
+</script>
+</body>
+</html>
