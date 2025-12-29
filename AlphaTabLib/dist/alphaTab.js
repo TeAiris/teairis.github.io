@@ -10678,13 +10678,13 @@
                 beat.tremoloSpeed = Duration.Eighth;
                 if (this._sy === AlphaTexSymbols.Number) {
                     switch (this._syData) {
-                        case Z:
+                        case 0:
                             beat.tremoloSpeed = Duration.SixtyFourth;
                             break;
-                        case D8:
+                        case 1:
                             beat.tremoloSpeed = Duration.Sixteenth;
                             break;
-                        case D16:
+                        case 2:
                             beat.tremoloSpeed = Duration.Sixteenth;
                             break;
                         case 8:
@@ -13031,7 +13031,7 @@
             const speed = this.data.readByte();
             switch (speed) {
 
-                case Z:
+                case 0:
                     beat.tremoloSpeed = Duration.ThirtySecond;
                     break;
                 case 1:
