@@ -3821,7 +3821,9 @@
         MusicFontSymbol[MusicFontSymbol["Tremolo3"] = 57890] = "Tremolo3";
         MusicFontSymbol[MusicFontSymbol["Tremolo2"] = 57889] = "Tremolo2";
         MusicFontSymbol[MusicFontSymbol["Tremolo1"] = 57888] = "Tremolo1";
-        MusicFontSymbol[MusicFontSymbol["Tremoloz"] = 57898] = "Tremoloz";
+        MusicFontSymbol[MusicFontSymbol["TremoloZ"] = 57898] = "TremoloZ";
+        MusicFontSymbol[MusicFontSymbol["TremoloD8"] = 57888] = "TremoloD8";
+        MusicFontSymbol[MusicFontSymbol["TremoloD16"] = 57888] = "TremoloD16";
         MusicFontSymbol[MusicFontSymbol["FlagEighthUp"] = 57920] = "FlagEighthUp";
         MusicFontSymbol[MusicFontSymbol["FlagEighthDown"] = 57921] = "FlagEighthDown";
         MusicFontSymbol[MusicFontSymbol["FlagSixteenthUp"] = 57922] = "FlagSixteenthUp";
@@ -10676,8 +10678,14 @@
                 beat.tremoloSpeed = Duration.Eighth;
                 if (this._sy === AlphaTexSymbols.Number) {
                     switch (this._syData) {
-                        case 0:
+                        case Z:
                             beat.tremoloSpeed = Duration.SixtyFourth;
+                            break;
+                        case D8:
+                            beat.tremoloSpeed = Duration.Sixteenth;
+                            break;
+                        case D16:
+                            beat.tremoloSpeed = Duration.Sixteenth;
                             break;
                         case 8:
                             beat.tremoloSpeed = Duration.Eighth;
@@ -13023,7 +13031,7 @@
             const speed = this.data.readByte();
             switch (speed) {
 
-                case 1:
+                case Z:
                     beat.tremoloSpeed = Duration.ThirtySecond;
                     break;
                 case 1:
@@ -38212,7 +38220,9 @@
         [MusicFontSymbol.TextTupletBracketStartLongStem, 0],
         [MusicFontSymbol.TextTuplet3LongStem, 0],
         [MusicFontSymbol.TextTupletBracketEndLongStem, 0],
-        [MusicFontSymbol.Tremoloz, 12],
+        [MusicFontSymbol.TremoloZ, 12],
+        [MusicFontSymbol.TremoloD8, 12],
+        [MusicFontSymbol.TremoloD16, 12],
         [MusicFontSymbol.Tremolo3, 12],
         [MusicFontSymbol.Tremolo2, 12],
         [MusicFontSymbol.Tremolo1, 12],
@@ -38448,7 +38458,9 @@
         [MusicFontSymbol.TextTupletBracketStartLongStem, 0],
         [MusicFontSymbol.TextTuplet3LongStem, 0],
         [MusicFontSymbol.TextTupletBracketEndLongStem, 0],
-        [MusicFontSymbol.Tremoloz, 0],
+        [MusicFontSymbol.TremoloZ, 0],
+        [MusicFontSymbol.TremoloD8, 0],
+        [MusicFontSymbol.TremoloD16, 0],
         [MusicFontSymbol.Tremolo3, 0],
         [MusicFontSymbol.Tremolo2, 0],
         [MusicFontSymbol.Tremolo1, 0],
