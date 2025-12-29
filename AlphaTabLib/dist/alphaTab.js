@@ -3821,7 +3821,7 @@
         MusicFontSymbol[MusicFontSymbol["Tremolo3"] = 57890] = "Tremolo3";
         MusicFontSymbol[MusicFontSymbol["Tremolo2"] = 57889] = "Tremolo2";
         MusicFontSymbol[MusicFontSymbol["Tremolo1"] = 57888] = "Tremolo1";
-        MusicFontSymbol[MusicFontSymbol["TremoloZ"] = 57898] = "TremoloZ";
+        MusicFontSymbol[MusicFontSymbol["Tremoloz"] = 57898] = "Tremoloz";
         MusicFontSymbol[MusicFontSymbol["TremoloD8"] = 57888] = "TremoloD8";
         MusicFontSymbol[MusicFontSymbol["TremoloD16"] = 57888] = "TremoloD16";
         MusicFontSymbol[MusicFontSymbol["FlagEighthUp"] = 57920] = "FlagEighthUp";
@@ -10685,7 +10685,7 @@
                             beat.tremoloSpeed = Duration.Sixteenth;
                             break;
                         case 2:
-                            beat.tremoloSpeed = Duration.Sixteenth;
+                            beat.tremoloSpeed = Duration.ThirtySecond;
                             break;
                         case 8:
                             beat.tremoloSpeed = Duration.Eighth;
@@ -13042,6 +13042,9 @@
                     break;
                 case 3:
                     beat.tremoloSpeed = Duration.ThirtySecond;
+                    break;
+                case 4:
+                    beat.tremoloSpeed = Duration.Sixteenth;
                     break;
             }
         }
@@ -38220,7 +38223,7 @@
         [MusicFontSymbol.TextTupletBracketStartLongStem, 0],
         [MusicFontSymbol.TextTuplet3LongStem, 0],
         [MusicFontSymbol.TextTupletBracketEndLongStem, 0],
-        [MusicFontSymbol.TremoloZ, 12],
+        [MusicFontSymbol.Tremoloz, 12],
         [MusicFontSymbol.TremoloD8, 12],
         [MusicFontSymbol.TremoloD16, 12],
         [MusicFontSymbol.Tremolo3, 12],
@@ -38458,7 +38461,7 @@
         [MusicFontSymbol.TextTupletBracketStartLongStem, 0],
         [MusicFontSymbol.TextTuplet3LongStem, 0],
         [MusicFontSymbol.TextTupletBracketEndLongStem, 0],
-        [MusicFontSymbol.TremoloZ, 0],
+        [MusicFontSymbol.Tremoloz, 0],
         [MusicFontSymbol.TremoloD8, 0],
         [MusicFontSymbol.TremoloD16, 0],
         [MusicFontSymbol.Tremolo3, 0],
@@ -52997,9 +53000,9 @@
         static getSymbol(duration) {
             switch (duration) {
                 case Duration.ThirtySecond:
-                    return MusicFontSymbol.Tremolo3;
+                    return MusicFontSymbol.Tremolo1;
                 case Duration.Sixteenth:
-                    return MusicFontSymbol.Tremolo2;
+                    return MusicFontSymbol.Tremolo1;
                 case Duration.Eighth:
                     return MusicFontSymbol.Tremolo1;
                 default:
@@ -53182,16 +53185,16 @@
                 const speed = this.beat.tremoloSpeed;
                 switch (speed) {
                     case Duration.ThirtySecond:
-                        offset = direction === BeamDirection.Up ? -15 : 15;
+                        offset = direction === BeamDirection.Up ? -10 : 10;
                         break;
                     case Duration.Sixteenth:
-                        offset = direction === BeamDirection.Up ? -12 : 15;
+                        offset = direction === BeamDirection.Up ? -10 : 10;
                         break;
                     case Duration.Eighth:
                         offset = direction === BeamDirection.Up ? -10 : 10;
                         break;
                     default:
-                        offset = direction === BeamDirection.Up ? -10 : 15;
+                        offset = direction === BeamDirection.Up ? -10 : 10;
                         break;
                 }
                 if (this.beat.duration < Duration.Half) {
