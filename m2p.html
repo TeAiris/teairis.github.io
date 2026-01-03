@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MIDI PDF Performance Viewer</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+    <style>
+        :root{
+            --bg:#0e0e0e; --panel:#1a1a1a; --accent:#4da3ff;
+            --text:#eaeaea; --muted:#888; --border:#333;
+        }
+        *{box-sizing:border-box}
+        body{
+            margin:0;height:100vh;display:flex;
+            background:var(--bg);color:var(--text);
+            font-family:system-ui,sans-serif;
+            overflow:hidden;
+        }
+
+        /* Sidebar */
+        #sidebar{
+            width:260px;background:var(--panel);
+            padding:12px;border-right:1px solid var(--border);
+            display:flex;flex-direction:column;
+        }
+        #sidebarHeader{
+            display:flex;justify-content:space-between;align-items:center;
+            margin-bottom:10px;
+        }
+        #sidebarHeader h2{margin:0;font-size:14px;color:var(--muted)}
+        #library{flex:1;overflow-y:auto}
+        .pdf-row{
+            display:flex;align-items:center;gap:6px;
+            padding:8px;border-radius:6px;cursor:pointer;
+        }
+        .pdf-row:hover{background:#2a2a2a}
+        .pdf-row.active{background:var(--accent);color:black}
+        .pdf-name{flex:1;font-size:13px;word-break:break-word}
+        .icon-btn{
+            background:#2a2a2a;border:none;border-radius:4px;
+            color:inherit;font-size:12px;cursor:pointer;
+            padding:4px 6px;
+        }
+        .icon-btn:hover{background:#3a3a3a}
+
+        /* Main */
+        #main{flex:1;display:flex;flex-direction:column}
+
+        /* Controls */
+        #controls{
+            display:flex;gap:8px;align-items:center;
+            padding:10px;background:var(--panel);
+            border-bottom:1px solid var(--border);
+        }
+        button{
+            padding:6px 10px;border:none;border-radius:4px;
+            background:#2a2a2a;color:var(--text);
+            cursor:pointer;font-size:12px;
+        }
+        button:hover{background:#3a3a3a}
+        button.active{background:var(--accent);color:black}
+        .learn.learning{background:orange;color:black}
+        #pageInfo{margin-left:auto;color:var(--muted);font-size:12px}
+
+        /* Viewer */
+        #viewer{
+            flex:1;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            background:black;
+            overflow:hidden;
+        }
+        #pageGrid{
+            display:grid;
+            gap:0px;
+            padding:10px;
+            width:auto;
+            height:auto;
+            justify-items:center;
+            align-items:center;
+        }
+        .page-canvas{background:black}
+
+        /* Page Panel */
+        #pagePanel{
+            width:120px;background:var(--panel);
+            border-left:1px solid var(--border);
+            padding:10px;overflow-y:auto;
+        }
+        .page-btn{width:100%;margin-bottom:4px;padding:6px 0;font-size:12px}
+        .page-btn.active{background:var(--accent);color:black}
+
+        /* Fullscreen */
+        body.fullscreen #controls{
+            opacity:0;pointer-events:none;
+        }
+        body.fullscreen #controls.show{
+            opacity:1;pointer-events:auto;
+        }
+
+        #pdfInput{display:none}
+    </style>
+</head>
+
+<body>
+
+<!-- Sidebar -->
+<div id="sidebar">
+    <div id="sidebarHeader">
+        <h2>PDF Library</h2>
+        <button id="addPdfBtn" class="icon-btn">＋</button>
+    </div>
+    <div id="library"></div>
+    <input type="file" id="pdfInput" accept="application/pdf" multiple>
+</div>
+
+<!-- Main -->
+<div id="main">
+    <div id="controls">
+        <button id="prevBtn">◀</button>
+        <button id="nextBtn">▶</button>
+
+        <button id="learnPrev" class="learn">MIDI ◀</button>
+        <button id="learnNext" class="learn">MIDI ▶</button>
+
+        <span>View:</span>
+        <button class="viewBtn active" data-view="1">1</button>
+        <button class="viewBtn" data-view="2">2</button>
+        <button class="viewBtn" data-view="4">4</button>
+
+        <button id="fullscreenBtn">⛶</button>
+
+        <span id="pageInfo"></span>
+
+        <div style="display:flex;align-items:center;gap:4px">
+            Cooldown
+            <input type="range" id="cooldownSlider" min="0" max="3000" step="100" value="1000">
+            <span id="cooldownVal">1000ms</span>
+        </div>
+    </div>
+
+    <div id="viewer">
+        <div id="pageGrid"></div>
+    </div>
+</div>
+
+<!-- Page Panel -->
+<div id="pagePanel">
+    <h3 style="margin:0 0 8px;font-size:13px;color:var(--muted)">Pages</h3>
+    <div id="pages"></div>
+</div>
+
+<script>
+    /* ================= IndexedDB ================= */
+    let db;
+    const DB="pdf-library", STORE="pdfs";
+    const openDB=()=>new Promise(res=>{
+        const r=indexedDB.open(DB,1);
+        r.onupgradeneeded=e=>e.target.result.createObjectStore(STORE,{keyPath:"name"});
+        r.onsuccess=e=>{db=e.target.result;res()};
+    });
+    const store=m=>db.transaction(STORE,m).objectStore(STORE);
+
+    /* ================= State ================= */
+    let pdfDoc=null,currentPage=1,totalPages=0,currentName=null;
+    let pagesPerView=1,isRendering=false;
+    const pageGrid=document.getElementById("pageGrid");
+
+    /* ================= Rendering ================= */
+    async function renderPages(){
+        if(isRendering||!pdfDoc)return;
+        isRendering=true;
+        pageGrid.innerHTML="";
+
+        const cols=pagesPerView===4?2:pagesPerView;
+        const rows=pagesPerView===4?2:1;
+        pageGrid.style.gridTemplateColumns = `repeat(${cols}, auto)`;
+        pageGrid.style.gridTemplateRows = `repeat(${rows}, auto)`;
+        // Set gap dynamically: 12px for single page, 0 for multi-page
+        pageGrid.style.gap = pagesPerView === 1 ? "12px" : "0px";
+
+        const viewerEl = document.getElementById("viewer");
+        const gridW = viewerEl.clientWidth;
+        const gridH = viewerEl.clientHeight;
+
+        for(let i=0;i<pagesPerView;i++){
+            const pn=currentPage+i;
+            if(pn>totalPages)break;
+
+            const page=await pdfDoc.getPage(pn);
+            const base=page.getViewport({scale:1});
+            // Calculate scale so that pages touch edge-to-edge with no gap in multi-page view
+            const usableW = gridW / cols;
+            const usableH = gridH / rows;
+
+            const scale = Math.min(
+                usableW / base.width,
+                usableH / base.height
+            );
+            const v=page.getViewport({scale});
+            const c=document.createElement("canvas");
+            c.className="page-canvas";
+            c.width=v.width;c.height=v.height;
+            await page.render({canvasContext:c.getContext("2d"),viewport:v}).promise;
+            pageGrid.appendChild(c);
+        }
+
+        pageInfo.textContent=`Page ${currentPage} / ${totalPages}`;
+        highlightPageBtn();
+        isRendering=false;
+    }
+
+    /* ================= Navigation ================= */
+    function step(dir){
+        const delta=dir*pagesPerView;
+        const next=Math.max(1,Math.min(totalPages,currentPage+delta));
+        if(next!==currentPage){currentPage=next;renderPages();}
+    }
+    prevBtn.onclick=()=>step(-1);
+    nextBtn.onclick=()=>step(1);
+    document.addEventListener("keydown",e=>{
+        if(e.key==="ArrowLeft")step(-1);
+        if(e.key==="ArrowRight")step(1);
+    });
+
+    /* ================= View Buttons ================= */
+    document.querySelectorAll(".viewBtn").forEach(b=>{
+        b.onclick=()=>{
+            document.querySelectorAll(".viewBtn").forEach(x=>x.classList.remove("active"));
+            b.classList.add("active");
+            pagesPerView=Number(b.dataset.view);
+            renderPages();
+        };
+    });
+
+    /* ================= MIDI (unchanged) ================= */
+    let learning=null;
+    let midiMap={prev:null,next:null};
+    let held={prev:false,next:false};
+    let nextAllowed={prev:0,next:0};
+
+    cooldownSlider.oninput=()=>cooldownVal.textContent=cooldownSlider.value+"ms";
+
+    navigator.requestMIDIAccess().then(a=>{
+        for(const i of a.inputs.values()){
+            i.onmidimessage=e=>{
+                const [s,d1,d2]=e.data;
+                const active=(d2??0)>64;
+                const msg={type:s&0xf0,data1:d1};
+
+                if(learning&&active){midiMap[learning]=msg;setLearn(null);return;}
+
+                for(const k of ["prev","next"]){
+                    if(!matches(msg,midiMap[k]))continue;
+                    if(active){
+                        if(!held[k]){
+                            const now=performance.now();
+                            if(now>=nextAllowed[k]){
+                                nextAllowed[k]=now+Number(cooldownSlider.value);
+                                step(k==="next"?1:-1);
+                            }
+                            held[k]=true;
+                        }
+                    }else held[k]=false;
+                }
+            };
+        }
+    });
+    function matches(a,b){return b&&a.type===b.type&&a.data1===b.data1}
+    function setLearn(t){
+        learning=t;
+        document.querySelectorAll(".learn").forEach(b=>b.classList.remove("learning"));
+        if(t)document.getElementById("learn"+t.charAt(0).toUpperCase()+t.slice(1)).classList.add("learning");
+    }
+    learnPrev.onclick=()=>setLearn("prev");
+    learnNext.onclick=()=>setLearn("next");
+
+    /* ================= Fullscreen ================= */
+    fullscreenBtn.onclick=()=>{
+        if(!document.fullscreenElement){
+            document.documentElement.requestFullscreen();
+        }else document.exitFullscreen();
+    };
+    document.addEventListener("fullscreenchange",()=>{
+        document.body.classList.toggle("fullscreen",!!document.fullscreenElement);
+    });
+    document.addEventListener("mousemove",e=>{
+        if(document.fullscreenElement&&e.clientY<80){
+            controls.classList.add("show");
+            clearTimeout(controls._t);
+            controls._t=setTimeout(()=>controls.classList.remove("show"),2000);
+        }
+    });
+
+    /* ================= Library ================= */
+    function refreshLibrary(){
+        library.innerHTML="";
+        store("readonly").getAll().onsuccess=e=>{
+            e.target.result.forEach(p=>{
+                const r=document.createElement("div");
+                r.className="pdf-row"+(p.name===currentName?" active":"");
+                const n=document.createElement("div");
+                n.className="pdf-name";n.textContent=p.name;
+                const ed=document.createElement("button");
+                ed.className="icon-btn";ed.textContent="✎";
+                ed.onclick=ev=>{
+                    ev.stopPropagation();
+                    const nn=prompt("Rename PDF",p.name);
+                    if(!nn||nn===p.name)return;
+                    store("readwrite").delete(p.name);
+                    store("readwrite").put({name:nn,data:p.data});
+                    if(currentName===p.name)currentName=nn;
+                    refreshLibrary();
+                };
+                r.onclick=()=>loadPDF(p);
+                r.append(n,ed);
+                library.appendChild(r);
+            });
+        };
+    }
+    async function loadPDF(p){
+        currentName=p.name;
+        pdfDoc=await pdfjsLib.getDocument({data:p.data}).promise;
+        totalPages=pdfDoc.numPages;
+        currentPage=1;
+        buildPagePanel();
+        renderPages();
+        refreshLibrary();
+    }
+    function buildPagePanel(){
+        pages.innerHTML="";
+        for(let i=1;i<=totalPages;i++){
+            const b=document.createElement("button");
+            b.className="page-btn";b.textContent=i;
+            b.onclick=()=>{currentPage=i;renderPages()};
+            pages.appendChild(b);
+        }
+    }
+    function highlightPageBtn(){
+        [...pages.children].forEach((b,i)=>b.classList.toggle("active",i+1===currentPage));
+    }
+
+    /* ================= Input ================= */
+    addPdfBtn.onclick=()=>pdfInput.click();
+    pdfInput.onchange=async e=>{
+        for(const f of e.target.files){
+            const buf=await f.arrayBuffer();
+            store("readwrite").put({name:f.name,data:buf});
+        }
+        pdfInput.value="";
+        refreshLibrary();
+    };
+
+    /* ================= Init ================= */
+    (async()=>{await openDB();refreshLibrary()})();
+</script>
+
+</body>
+</html>
