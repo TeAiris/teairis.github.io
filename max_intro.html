@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Introduction to Max</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: transparent;
+            padding: 0;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 0;
+            box-shadow: none;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            color: #1e3a8a;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #d4af37;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        h2 {
+            font-size: 1.8em;
+            color: #1e40af;
+            margin-top: 35px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            border-left: 4px solid #d4af37;
+            padding-left: 15px;
+        }
+
+        h3 {
+            font-size: 1.3em;
+            color: #2c3e50;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h4 {
+            font-size: 1.1em;
+            color: #555;
+            margin-top: 20px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        p {
+            margin-bottom: 15px;
+            font-size: 1em;
+        }
+
+        ul {
+            margin: 15px 0 15px 25px;
+            font-size: 1em;
+        }
+
+        li {
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+
+        .checkpoint {
+            background: linear-gradient(135deg, #1e40af 0%, #d4af37 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 25px 0;
+            box-shadow: 0 4px 15px rgba(30, 64, 175, 0.3);
+        }
+
+        .checkpoint h2 {
+            color: white;
+            border-left-color: white;
+            margin-top: 0;
+        }
+
+        .checkpoint ul {
+            color: white;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        th {
+            background: #d4af37;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 1em;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #ecf0f1;
+            font-size: 1em;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .object-type {
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #1e40af;
+        }
+
+        .object-type h4 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+            color: #1e40af;
+        }
+
+        .icon {
+            display: inline-block;
+            width: 1.2em;
+            height: 1.2em;
+        }
+
+        .demo-note {
+            background: #fffbf0;
+            border-left: 4px solid #d4af37;
+            padding: 12px;
+            margin: 15px 0;
+            border-radius: 4px;
+            font-style: italic;
+        }
+
+        .section-divider {
+            height: 2px;
+            background: linear-gradient(to right, transparent, #1e40af, #d4af37, transparent);
+            margin: 40px 0;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1 style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="display: flex; align-items: center; gap: 15px;">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+                Introduction to Max
+            </span>
+        <img src="double_logo.png" alt="Max Logo" style="height: 60px; width: auto;">
+    </h1>
+    <p style="text-align: right; font-style: italic; margin-top: -15px; margin-bottom: 30px; background: linear-gradient(135deg, #1e40af 0%, #d4af37 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: 500;">Patched by TeAiris Majors</p>
+
+    <h2>
+        <img src="C74.svg" alt="Max Icon" style="width: 1.5em; height: 1.5em; vertical-align: middle; margin-right: 10px;">
+        What Is Max?
+    </h2>
+
+    <div style="text-align: center; margin: 20px 0;">
+        <img src="max_gif.gif" alt="Max Interface Demo" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+    </div>
+
+    <p>Max is a visual programming environment for creating:</p>
+    <ul>
+        <li>Music</li>
+        <li>Synthesis</li>
+        <li>Sound design</li>
+        <li>Interactive systems</li>
+        <li>Gesture-based interaction</li>
+        <li>Audio-Visual</li>
+    </ul>
+    <p>Instead of writing lines of code, you build systems by connecting objects with patch cords.</p>
+
+    <div style="background: #000; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%;">
+            <iframe
+                    width="560"
+                    height="315"
+                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
+                    src="https://www.youtube.com/embed/7xrYDKNaeXY"
+                    title="Demo Project - Virtual DJ Rig"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    referrerpolicy="strict-origin-when-cross-origin"
+                    allowfullscreen>
+            </iframe>
+        </div>
+        <p style="color: #fff; text-align: center; margin-top: 10px; font-size: 0.9em;">Demo Project - Virtual DJ Rig</p>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <div class="checkpoint">
+        <h2>
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            Checkpoint 1 — Create a Project and Patch
+        </h2>
+        <p>Working inside of a project helps keep things organized and all dependencies together.</p>
+        <p><strong>Steps:</strong></p>
+        <ul>
+            <li>Open Max</li>
+            <li>Click File, New Project</li>
+            <li>Name the Project clearly (example: Intro_Max_YourName)</li>
+            <li>Click File, New Patcher</li>
+        </ul>
+    </div>
+
+    <h3>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <path d="M9 3v18"/>
+        </svg>
+        Max Canvas (Patcher Window)
+    </h3>
+    <ul>
+        <li>The canvas where you place and connect objects</li>
+        <li>Contains objects, UI elements, and patch cords</li>
+    </ul>
+
+    <h3>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+        </svg>
+        Tool Bar and Creating Objects (Shortcuts)
+    </h3>
+
+    <h4>Top Tool Bar</h4>
+    <p>The top toolbar contain many common objects you may need while programming in Max. These could be for interaction, functional, or UI purposes</p>
+
+    <h4>Creating Objects (Shortcuts)</h4>
+    <table>
+        <thead>
+        <tr>
+            <th>Action</th>
+            <th>Shortcut</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>New object</td>
+            <td><code>n</code></td>
+        </tr>
+        <tr>
+            <td>Message box</td>
+            <td><code>m</code></td>
+        </tr>
+        <tr>
+            <td>Comment</td>
+            <td><code>c</code></td>
+        </tr>
+        <tr>
+            <td>Integer box</td>
+            <td><code>i</code></td>
+        </tr>
+        <tr>
+            <td>Float box</td>
+            <td><code>f</code></td>
+        </tr>
+        <tr>
+            <td>Lock / Unlock</td>
+            <td><code>Cmd / Ctrl + E</code></td>
+        </tr>
+        </tbody>
+    </table>
+
+    <h2>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="7" width="20" height="14" rx="2"/>
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+        </svg>
+        Types of Objects
+    </h2>
+
+    <div class="object-type">
+        <h4>Data (Message-Rate) Objects</h4>
+        <p>Used for numbers, control, and logic.</p>
+        <p>Common examples:</p>
+        <ul>
+            <li>message</li>
+            <li>int</li>
+            <li>float</li>
+            <li>button</li>
+            <li>toggle</li>
+        </ul>
+    </div>
+
+    <div class="object-type">
+        <h4>Signal (Audio-Rate) Objects</h4>
+        <p>Used for sound and audio processing and end with a ~</p>
+        <p>Examples:</p>
+        <ul>
+            <li>cycle~</li>
+            <li>ezadc~</li>
+            <li>ezdac~</li>
+            <li>gain~</li>
+        </ul>
+    </div>
+
+    <div class="object-type">
+        <h4>Max for Live Objects</h4>
+        <p>Some objects are designed specifically for Max for Live.</p>
+        <p>These objects are useful because they can connect directly to Ableton Live parameters and be automated as well</p>
+        <p>Examples include:</p>
+        <ul>
+            <li>live.dial</li>
+            <li>live.slider</li>
+            <li>live.gain~</li>
+            <li>live.toggle</li>
+        </ul>
+        <p>These objects can be used in Max as normal also.</p>
+    </div>
+
+
+    <h3>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        Edit vs Locked Mode
+    </h3>
+    <ul>
+        <li>Cmd + E (Mac) or Ctrl + E (Windows)</li>
+        <li>Unlocked: build and edit</li>
+        <li>Locked: interact and perform</li>
+    </ul>
+
+    <h3>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m6.36 6.36l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m6.36-6.36l4.24-4.24"/>
+        </svg>
+        Inspector
+    </h3>
+    <p>The Inspector shows properties for the currently selected object. Using the Inspector you can edit an objects p</p>
+    <ul>
+        <li>Settings and Attributes</li>
+        <li>Adjust colors and appearance</li>
+    </ul>
+    <p>Using the top tabs can help filter through what you may need to edit.</p>
+
+    <h3>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+        </svg>
+        Reference
+    </h3>
+    <ul>
+        <li>Reference: shows documentation for the selected object</li>
+    </ul>
+
+    <h3>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        Object Help Files
+    </h3>
+    <p>Max includes built-in help files for mostly every object.</p>
+    <p>They are fully working patches and are one of the best ways to learn how to use Max objects in context.</p>
+    <p>To open a help file:</p>
+    <ul>
+        <li>Hold Alt (Option on Mac)</li>
+        <li>Click on an object</li>
+    </ul>
+
+    <div class="section-divider"></div>
+
+    <h2>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+        Flow
+    </h2>
+
+    <h3>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <polyline points="19 12 12 19 5 12"/>
+        </svg>
+        Patch Cords and Inlets
+    </h3>
+    <ul>
+        <li>Patch cords carry data or audio</li>
+        <li>Direction matters</li>
+        <li>Left inlet: hot (triggers action)</li>
+        <li>Right inlet: cold (sets values only)</li>
+    </ul>
+
+    <h3>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="13 17 18 12 13 7"/>
+            <polyline points="6 17 11 12 6 7"/>
+        </svg>
+        Execution Order
+    </h3>
+    <ul>
+        <li>Messages execute right to left</li>
+        <li>Math evaluates left to right</li>
+    </ul>
+    <p>If something behaves incorrectly check your objects position.</p>
+    <p>Max is fast so you may not see it happening!</p>
+
+    <h3>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+            <line x1="12" y1="22.08" x2="12" y2="12"/>
+        </svg>
+        Value
+    </h3>
+    <ul>
+        <li>Value - can be used to store and access a number anywhere in a patch</li>
+    </ul>
+
+    <h3>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
+        Playlist
+    </h3>
+    <ul>
+        <li>Plays audio files</li>
+        <li>Supports multiple files and looping</li>
+        <li>Useful for sample banks and cue-based playback</li>
+    </ul>
+
+    <h3>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <line x1="3" y1="9" x2="21" y2="9"/>
+            <line x1="3" y1="15" x2="21" y2="15"/>
+            <line x1="9" y1="3" x2="9" y2="21"/>
+            <line x1="15" y1="3" x2="15" y2="21"/>
+        </svg>
+        Live.grid
+    </h3>
+    <ul>
+        <li>Interactive grid interface for step sequencing and matrix control</li>
+        <li>Supports multiple columns and rows for pattern programming</li>
+        <li>Useful for creating drum patterns, note sequences, and visual control interfaces</li>
+    </ul>
+
+    <h3>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"/>
+            <rect x="14" y="3" width="7" height="7"/>
+            <rect x="14" y="14" width="7" height="7"/>
+            <rect x="3" y="14" width="7" height="7"/>
+        </svg>
+        Counter
+    </h3>
+    <ul>
+        <li>Steps through a series of numbers</li>
+        <li>Controllable start, end, and direction</li>
+        <li>Useful for creating sequences and patterns</li>
+        <li>Can be used with lists to cycle through values</li>
+    </ul>
+
+    <div class="section-divider"></div>
+
+    <div class="checkpoint">
+        <h2>
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            Checkpoint 2 — Flow and Triggering
+        </h2>
+        <ul>
+            <li>Using the objects we've learned so far, create create a trigger based drum machine</li>
+            <li>Use keyboard input to map numbers to buttons</li>
+        </ul>
+    </div>
+
+    <h3>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M2 12h2l3-9 4 18 4-18 3 9h2"/>
+        </svg>
+        Extending the Drum Machine
+    </h3>
+    <ul>
+        <li>Using [live.grid], [tempo], and [counter] create a drum sequencer</li>
+        <li>What if you use different counters?</li>
+    </ul>
+
+    <div class="section-divider"></div>
+
+    <h2>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 18V5l12-2v13"/>
+            <circle cx="6" cy="18" r="3"/>
+            <circle cx="18" cy="16" r="3"/>
+        </svg>
+        Audio Input and Output
+    </h2>
+
+    <h3>Output</h3>
+    <ul>
+        <li>dac~ sends sound to your speakers</li>
+        <li>ezdac~ sends sound to your speakers and includes an on/off toggle</li>
+    </ul>
+
+    <h3>Input</h3>
+    <ul>
+        <li>adc~ receives sound from a microphone or input</li>
+        <li>ezacd~ receives sound from a microphone or inputand includes an on/off toggle</li>
+    </ul>
+
+    <h3>Playlist</h3>
+    <ul>
+        <li>Plays audio files</li>
+        <li>Supports multiple files and looping</li>
+        <li>Useful for sample banks and cue-based playback</li>
+    </ul>
+
+    <h3>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="6" width="20" height="12" rx="2"/>
+            <path d="M7 10h10M7 14h10"/>
+        </svg>
+        Monitoring
+    </h3>
+    <ul>
+        <li>meter~ shows audio level</li>
+    </ul>
+
+    <h3>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="2" y1="12" x2="22" y2="12"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        </svg>
+        Visual
+    </h3>
+    <ul>
+        <li>scope~</li>
+        <li>Spectrascope~</li>
+    </ul>
+
+    <div class="checkpoint">
+        <h2>
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            Checkpoint 3 — Using Sound as a Control
+        </h2>
+        <ul>
+            <li>Use an object to receive microphone input from your computer</li>
+            <li>Use three ways visualizing your input</li>
+        </ul>
+    </div>
+
+    <h2>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+        </svg>
+        Oscillators and Wavetables
+    </h2>
+    <p>Oscillators generate sound by repeating waveforms.</p>
+    <p>Common types:</p>
+    <ul>
+        <li>cycle~ (sine wave)</li>
+        <li>rect~ (square wave)</li>
+        <li>tri~ (triangle wave)</li>
+        <li>saw~ (saw wave)</li>
+    </ul>
+    <p>They require:</p>
+    <ul>
+        <li>A frequency</li>
+        <li>A connection to another signal object</li>
+    </ul>
+
+    <h2>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 18V5l12-2v13"/>
+            <circle cx="6" cy="18" r="3"/>
+            <circle cx="18" cy="16" r="3"/>
+        </svg>
+        Frequency and Pitch
+    </h2>
+
+    <h3>Frequency</h3>
+    <ul>
+        <li>Measured in Hertz (Hz)</li>
+        <li>Higher frequency means higher pitch</li>
+    </ul>
+
+    <h3>MIDI to Frequency [mtof]</h3>
+    <ul>
+        <li>mtof converts MIDI note numbers to frequency values</li>
+    </ul>
+
+    <h2>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="20" x2="12" y2="10"/>
+            <line x1="18" y1="20" x2="18" y2="4"/>
+            <line x1="6" y1="20" x2="6" y2="16"/>
+        </svg>
+        Scaling Values
+    </h2>
+
+    <h3>Scale</h3>
+    <p>Scale maps one numeric range to another.</p>
+    <p>Example:</p>
+    <p><code>scale 0 127 100 1000</code></p>
+    <p>Used for:</p>
+    <ul>
+        <li>Sliders</li>
+        <li>MIDI controllers</li>
+        <li>Parameter mapping</li>
+    </ul>
+
+    <h3>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+        </svg>
+        Gain
+    </h3>
+    <ul>
+        <li>Controls signal amplitude</li>
+        <li>Uses decibels</li>
+    </ul>
+
+    <h3>Live Gain (live.gain~)</h3>
+    <ul>
+        <li>Max for Live–style gain control</li>
+        <li>Provides visual metering and fader-style control</li>
+        <li>Commonly used in performance patches and Ableton Live integration</li>
+    </ul>
+    <p><strong>Always control volume before the output!</strong></p>
+
+    <h3>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        Load Bang
+    </h3>
+    <ul>
+        <li>fires a bang when loading the patch for the first time</li>
+    </ul>
+
+    <h3>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="16 18 22 12 16 6"/>
+            <polyline points="8 6 2 12 8 18"/>
+        </svg>
+        Send and Receive (s … r …)
+    </h3>
+    <ul>
+        <li>Can be used to send messages or signals through the patch</li>
+        <li>Must be named the same</li>
+        <li>Ex: [s myValue] [r myValue]</li>
+    </ul>
+
+    <h2>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M3 12h1m16 0h1M12 3v1m0 16v1M5.6 5.6l.7.7m11.4 11.4l.7.7M18.4 5.6l-.7.7M6.3 17.7l-.7.7"/>
+        </svg>
+        Routing and Switching
+    </h2>
+    <p>Routing objects decide where data goes or which data is allowed through.</p>
+
+    <h3>Gate</h3>
+    <ul>
+        <li>One inlet, multiple outlets</li>
+        <li>Chooses which outlet receives the incoming data</li>
+        <li>Controlled by an index or control value</li>
+    </ul>
+    <p>Gate is used when you want to send one stream of data to different destinations.</p>
+
+    <h3>Switch / Gswitch</h3>
+    <ul>
+        <li>Multiple inlets, one outlet</li>
+        <li>Chooses which inlet is allowed through</li>
+        <li>Gswitch works with both data and audio</li>
+    </ul>
+    <p>Switching is used when you have multiple possible inputs and want to choose which one is active.</p>
+
+    <div class="section-divider"></div>
+
+    <div class="checkpoint">
+        <h2>
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            Checkpoint 5 — Synthesis
+        </h2>
+        <ul>
+            <li>Create a synth sound using 3 oscillators</li>
+            <li>Chose a blended sound, or switchable sound.</li>
+        </ul>
+    </div>
+
+    <h2>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M2 12h2l3-9 4 18 4-18 3 9h2"/>
+        </svg>
+        Extending the Synth
+    </h2>
+
+    <h3>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M2 12h2l3-9 4 18 4-18 3 9h2"/>
+        </svg>
+        Building a Simple Synth
+    </h3>
+    <p>1. Pitch control (KSlider)</p>
+    <p>2. Mtof</p>
+    <p>3. Oscillator</p>
+    <p>4. Gain or live.gain~</p>
+    <p>5. Output</p>
+    <p>Additions:</p>
+    <ul>
+        <li>Metro</li>
+        <li>Gate for waveform selection</li>
+    </ul>
+
+    <h2>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        Timing and Control
+    </h2>
+
+    <h3>Metro</h3>
+    <ul>
+        <li>Generates regular bangs</li>
+        <li>Used for timing and repetition</li>
+        <li>Often controlled by a toggle</li>
+    </ul>
+
+    <h3>Tempo</h3>
+    <ul>
+        <li>Can be used to interact beats at a specific tempo or time division</li>
+    </ul>
+
+    <h3>Transport</h3>
+
+    <h3>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+            <line x1="4" y1="22" x2="4" y2="15"/>
+        </svg>
+        Counter and Lists (Arpeggiation)
+    </h3>
+    <p>A simple arpeggiator can be built using a counter and a list.</p>
+    <ul>
+        <li>counter steps through a series of numbers</li>
+        <li>coll or list stores pitch values</li>
+        <li>The counter index is used to read values from the list</li>
+    </ul>
+    <p>This allows you to:</p>
+    <ul>
+        <li>Cycle through pitches</li>
+        <li>Create repeating patterns</li>
+        <li>Build simple arpeggiators</li>
+    </ul>
+    <p>Common objects used:</p>
+    <ul>
+        <li>counter</li>
+        <li>coll</li>
+        <li>metro</li>
+    </ul>
+
+    <div class="section-divider"></div>
+
+    <h2>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+        </svg>
+        Object Reference
+    </h2>
+
+    <h3>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+        </svg>
+        Data and Control
+    </h3>
+    <table>
+        <tbody>
+        <tr>
+            <td><strong>message</strong></td>
+            <td>Sends values or commands. Often used to store or trigger information.</td>
+        </tr>
+        <tr>
+            <td><strong>int</strong></td>
+            <td>Stores and outputs integer values.</td>
+        </tr>
+        <tr>
+            <td><strong>float</strong></td>
+            <td>Stores and outputs floating-point numbers.</td>
+        </tr>
+        <tr>
+            <td><strong>number</strong></td>
+            <td>A UI object that displays and outputs numbers.</td>
+        </tr>
+        <tr>
+            <td><strong>slider</strong></td>
+            <td>A graphical control used to send changing numeric values.</td>
+        </tr>
+        <tr>
+            <td><strong>button</strong></td>
+            <td>Outputs a bang when clicked. Used to trigger actions.</td>
+        </tr>
+        <tr>
+            <td><strong>toggle</strong></td>
+            <td>Outputs 0 or 1. Used for on/off control.</td>
+        </tr>
+        <tr>
+            <td><strong>line</strong></td>
+            <td>Generates smooth value changes over time. Often used for envelopes or gradual transitions.</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <h3>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        Timing and Flow
+    </h3>
+    <table>
+        <tbody>
+        <tr>
+            <td><strong>metro</strong></td>
+            <td>Outputs bangs at regular time intervals.</td>
+        </tr>
+        <tr>
+            <td><strong>gswitch</strong></td>
+            <td>Routes data or audio between multiple inputs.</td>
+        </tr>
+        <tr>
+            <td><strong>change</strong></td>
+            <td>Only outputs when the input value changes from the previous value.</td>
+        </tr>
+        <tr>
+            <td><strong>counter</strong></td>
+            <td>Steps through a series of numbers with controllable start, end, and direction.</td>
+        </tr>
+        <tr>
+            <td><strong>tempo</strong></td>
+            <td>Controls timing based on tempo (BPM) and time divisions.</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <h3>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 18V5l12-2v13"/>
+            <circle cx="6" cy="18" r="3"/>
+            <circle cx="18" cy="16" r="3"/>
+        </svg>
+        Audio and Signal
+    </h3>
+    <table>
+        <tbody>
+        <tr>
+            <td><strong>cycle~</strong></td>
+            <td>Sine wave oscillator.</td>
+        </tr>
+        <tr>
+            <td><strong>rect~</strong></td>
+            <td>Square wave oscillator.</td>
+        </tr>
+        <tr>
+            <td><strong>tri~</strong></td>
+            <td>Triangle wave oscillator.</td>
+        </tr>
+        <tr>
+            <td><strong>gain~</strong></td>
+            <td>Controls audio volume.</td>
+        </tr>
+        <tr>
+            <td><strong>live.gain~</strong></td>
+            <td>Max for Live-style gain control with visual metering and fader.</td>
+        </tr>
+        <tr>
+            <td><strong>meter~</strong></td>
+            <td>Displays audio signal level.</td>
+        </tr>
+        <tr>
+            <td><strong>adc~</strong></td>
+            <td>Audio input from microphone or interface.</td>
+        </tr>
+        <tr>
+            <td><strong>dac~</strong></td>
+            <td>Audio output to speakers.</td>
+        </tr>
+        <tr>
+            <td><strong>ezdac~</strong></td>
+            <td>Audio output with built-in on/off toggle.</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <h3>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+            <circle cx="12" cy="10" r="3"/>
+        </svg>
+        Pitch and Mapping
+    </h3>
+    <table>
+        <tbody>
+        <tr>
+            <td><strong>mtof</strong></td>
+            <td>Converts MIDI note numbers into frequency values.</td>
+        </tr>
+        <tr>
+            <td><strong>scale</strong></td>
+            <td>Maps values from one numeric range to another.</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <h3>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polygon points="10 8 16 12 10 16 10 8" fill="currentColor"/>
+        </svg>
+        Playback and Sequencing
+    </h3>
+    <table>
+        <tbody>
+        <tr>
+            <td><strong>playlist~</strong></td>
+            <td>Plays audio files and supports looping.</td>
+        </tr>
+        <tr>
+            <td><strong>live.grid</strong></td>
+            <td>Interactive grid interface for step sequencing and matrix control.</td>
+        </tr>
+        </tbody>
+    </table>
+
+
+</div>
+</body>
+</html>
